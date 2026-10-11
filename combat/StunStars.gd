@@ -11,6 +11,10 @@ extends Node2D
 ## 캐릭터가 사라질 때 연출도 같이 잘려나간다
 
 const SCENE_PATH := "res://combat/StunStars.tscn"
+## 씬·두 번째 그림을 **한 번만 읽어 붙들어 둔다**(2026-10-10 렉 실측: 별이 다 사라지면 캐시가 풀려
+## 3타로 날릴 때마다 1882x836 그림을 디스크에서 다시 읽느라 22~27ms 멈췄다)
+static var _scene: PackedScene = null
+static var _frame_b_tex: Texture2D = null
 
 ## 두 그림에서 실제로 그려진 부분(알파 bbox)의 **합집합**. 1번은 x 272~1690 / y 58~616,
 ## 2번은 x 234~1648 / y 112~637이라 각자 잘라내면 프레임마다 그림이 좌우로 튄다 —
@@ -40,7 +44,12 @@ var _elapsed: float = 0.0
 @onready var _stars: Sprite2D = $Stars
 ## 0번 프레임은 씬에 붙어 있고, 1번 프레임만 여기서 불러와 번갈아 끼운다
 @onready var _frame_a: Texture2D = _stars.texture
-@onready var _frame_b: Texture2D = load("res://sprite/맵/놀이터/기절효과2.png")
+@onready var _frame_b: Texture2D = _load_frame_b()
+
+static func _load_frame_b() -> Texture2D:
+	if _frame_b_tex == null:
+		_frame_b_tex = load("res://sprite/맵/놀이터/기절효과2.png")
+	return _frame_b_tex
 
 func _ready() -> void:
 	# 자르는 영역은 이 스크립트가 기준이다 — 씨에도 같은 값이 박혀 있지만,
@@ -62,7 +71,9 @@ static func spawn(fighter: Fighter, duration: float) -> StunStars:
 		if node is StunStars and node.target == fighter:
 			node.extend(duration)
 			return node
-	var stars: StunStars = load(SCENE_PATH).instantiate()
+	if _scene == null:
+		_scene = load(SCENE_PATH)
+	var stars: StunStars = _scene.instantiate()
 	stars.target = fighter
 	stars._life = duration
 	parent.add_child(stars)

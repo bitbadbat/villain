@@ -3,7 +3,8 @@ extends Node2D
 
 ## 방어에 막힌 순간 막힌 자리에서 터지는 이펙트(2026-10-10 사용자 레퍼런스).
 ## 예전의 "BLOCK" 글자 + 작은 파란 불꽃을 대신한다. 그림 없이 `_draw()`로 그린다:
-## ① 가운데서 파란 원이 한 번 번쩍 → 초승달 고리가 되어 **막는 사람 뒤쪽으로 밀려나며** 커진다
+## ① 가운데서 파란 원이 한 번 번쩍 → **세로로 납작한 타원 고리**(옆에서 본 방패)가 되어 **막는 사람 뒤쪽으로 밀려나며** 커진다
+##    (2026-10-10 사용자: 반달 대신 "원형 납작한 모양", 세로로 긴 타원)
 ## ② 그 뒤에 비치는 하늘색 반투명 판 ③ 보라·흰 번개 ④ 뒤쪽으로 튀는 흰 속도선
 ##
 ## 그리는 좌표는 "+x = 막는 사람의 뒤쪽(공격이 밀고 들어가는 쪽)" 하나로 짜고,
@@ -22,16 +23,17 @@ extends Node2D
 @export var streak_color: Color = Color(1.0, 1.0, 1.0)
 ## ① 처음 번쩍이는 원의 반지름(px)
 @export var flash_radius: float = 16.0
-## 번쩍임이 초승달로 바뀌는 시점(0~1)
+## 번쩍임이 고리로 바뀌는 시점(0~1)
 @export_range(0.05, 0.6, 0.01) var flash_part: float = 0.22
-## 초승달 반지름: 처음 → 끝(px). 캐릭터 키가 약 92px라 끝에서 몸을 반쯤 덮는다
+## 고리 세로 반지름: 처음 → 끝(px). 캐릭터 키가 약 92px라 끝에서 몸을 반쯤 덮는다
 @export var arc_radius_start: float = 18.0
 @export var arc_radius_end: float = 48.0
-## 초승달이 뒤로 밀려나는 거리(px)
+## 고리가 뒤로 밀려나는 거리(px)
 @export var arc_travel: float = 26.0
-## 초승달이 감싸는 각도(도, 양쪽 합)와 가장 두꺼운 곳 두께(px)
-@export var arc_span_deg: float = 150.0
+## 고리 두께(px)
 @export var arc_thickness: float = 13.0
+## 고리 가로/세로 비율 — 작을수록 납작하다(옆에서 본 방패). 1이면 동그라미
+@export_range(0.1, 1.0, 0.01) var ring_flatten: float = 0.38
 ## ② 판 크기(px) — 높이 x 폭. 고리 뒤에 세로로 선다
 @export var panel_size: Vector2 = Vector2(78.0, 16.0)
 ## ③ 번개 줄기 수 / 한 줄 마디 수 / 마디 길이(px) / 모양이 바뀌는 간격(초, 지직거림)
@@ -103,7 +105,7 @@ func _draw() -> void:
 	var s: float = sqrt(_power)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(_side, 1.0))
 
-	# 초승달이 떠나는 진행도(번쩍임이 끝난 뒤 0 → 1, 확 나갔다 느려진다)
+	# 고리가 떠나는 진행도(번쩍임이 끝난 뒤 0 → 1, 확 나갔다 느려진다)
 	var u: float = clampf((t - flash_part * 0.5) / (1.0 - flash_part * 0.5), 0.0, 1.0)
 	var go: float = 1.0 - pow(1.0 - u, 3.0)
 	var fade: float = 1.0 - u
@@ -138,22 +140,21 @@ func _draw() -> void:
 			draw_polyline(pts, glow, 4.0)
 			draw_polyline(pts, core, 1.5)
 
-	# ① 초승달 고리 — 볼록한 쪽이 공격자 쪽, 두께는 가운데가 두껍고 양 끝이 뾰족
+	# ① 납작한 타원 고리 — 세로로 길고 옆으로 얇다(방패를 옆에서 본 모양). 뒤로 밀려나며 커진다
 	if t >= flash_part * 0.5:
 		var radius: float = lerpf(arc_radius_start, arc_radius_end, go) * s
-		var center := Vector2(arc_x + radius * 0.55, 0.0)
-		var half: float = deg_to_rad(arc_span_deg) * 0.5
+		var center := Vector2(arc_x, 0.0)
 		var thick: float = arc_thickness * s * (0.5 + 0.5 * fade)
 		var bright: float = pow(fade, 0.6)   # 두께보다 밝기가 천천히 빠져야 묵직하다
 		var glow := ring_color
 		glow.a = 0.35 * bright
-		_draw_crescent(center, radius, half, thick * 2.2, glow)
+		_draw_flat_ring(center, radius, thick * 2.2, glow)
 		var col := ring_color
 		col.a = bright
-		_draw_crescent(center, radius, half, thick, col)
+		_draw_flat_ring(center, radius, thick, col)
 		var hot := core_color
 		hot.a = bright
-		_draw_crescent(center, radius, half * 0.8, thick * 0.35, hot)
+		_draw_flat_ring(center, radius, thick * 0.35, hot)
 
 	# ④ 속도선 — 고리 언저리에서 뒤쪽으로 쏜다
 	for st in _streaks:
@@ -179,20 +180,21 @@ func _draw() -> void:
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-## 원의 왼쪽(공격자 쪽, 각도 PI 둘레) 호를 두께가 양 끝으로 줄어드는 띠로 그린다.
-## 끝에서 두께가 0이 되므로 다각형 분할 대신 칸마다 `draw_primitive`로 그린다
-func _draw_crescent(center: Vector2, radius: float, half: float, thick: float, col: Color) -> void:
-	var steps: int = 20
+## 세로로 긴 타원 고리(가로 반지름 = radius x ring_flatten). 두께는 화면 px 그대로 — 납작하게 눌러도 옆 테두리가 가늘어지지 않게
+## 법선 방향으로 직접 벌린다. 칸마다 `draw_primitive`(고리라 한 번에 다각형으로 못 그린다)
+func _draw_flat_ring(center: Vector2, radius: float, thick: float, col: Color) -> void:
+	var steps: int = 40
+	var rx: float = radius * ring_flatten
+	var ry: float = radius
 	var cols := PackedColorArray([col, col, col, col])
 	var prev_in: Vector2
 	var prev_out: Vector2
 	for i in steps + 1:
-		var f: float = float(i) / float(steps)
-		var a: float = PI - half + 2.0 * half * f
-		var w: float = thick * sin(f * PI)
-		var d := Vector2.from_angle(a)
-		var p_in: Vector2 = center + d * (radius - w * 0.5)
-		var p_out: Vector2 = center + d * (radius + w * 0.5)
+		var a: float = TAU * float(i) / float(steps)
+		var p := center + Vector2(cos(a) * rx, sin(a) * ry)
+		var n := Vector2(cos(a) * ry, sin(a) * rx).normalized()
+		var p_in: Vector2 = p - n * thick * 0.5
+		var p_out: Vector2 = p + n * thick * 0.5
 		if i > 0:
 			draw_primitive(PackedVector2Array([prev_in, prev_out, p_out, p_in]), cols, PackedVector2Array())
 		prev_in = p_in

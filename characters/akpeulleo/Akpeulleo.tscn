@@ -49,6 +49,7 @@ script = ExtResource("3")
 skill_name = "키보드 워리어"
 description = "키보드를 휘둘러 3연타. 마지막 타에 멀리 날린다. 헛치면 1초 쉬어야 한다."
 demo_video = ExtResource("vid_atk")
+air_swing_enabled = true
 windup = 0.096
 swing_duration = 0.24
 finisher_windup = 0.223

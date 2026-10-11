@@ -63,6 +63,7 @@ extends Skill
 const SPEED_LINES := preload("res://combat/SpeedLines.gd")
 const BIKE_WRECK := preload("res://combat/BikeWreck.gd")
 const JUMP_WIND := preload("res://combat/JumpWind.gd")
+const _SKID_DUST_SCENE := preload("res://skills/SkidDust.tscn")
 var _wind = null
 
 var _time_left: float = 0.0
@@ -279,7 +280,7 @@ func _spawn_skid(fighter: Fighter) -> void:
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return
-	var dust: Node2D = load("res://skills/SkidDust.tscn").instantiate()
+	var dust: Node2D = _SKID_DUST_SCENE.instantiate()
 	parent.add_child(dust)
 	dust.z_index = -1   # 자전거·본체보다 뒤에 (바닥에 붙어 보이게)
 	dust.global_position = fighter.global_position + Vector2(rear_wheel_offset.x * _direction, rear_wheel_offset.y)

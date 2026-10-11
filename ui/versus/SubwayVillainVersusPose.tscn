@@ -1,9 +1,9 @@
 [gd_scene load_steps=6 format=3]
 
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/지하철빌런몸.png" id="1_body"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/지하철빌런몸.png" id="1_body"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="2_hand"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/단소.png" id="3_danso"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌/입벌린지하철.png" id="4_head"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/단소.png" id="3_danso"]
+[ext_resource type="Texture2D" path="res://sprite/지하철빌런/입벌린지하철.png" id="4_head"]
 [ext_resource type="Script" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
 
 [node name="SubwayVillainVersusPose" type="Node2D"]

@@ -30,3 +30,29 @@ extends Resource
 @export var night: bool = false
 ## 밤일 때 달도 띄울지
 @export var night_moon: bool = true
+
+@export_group("조명(인물·길)")
+## 사람·경찰차·구경꾼에 곱할 빛 색 — 흰색이면 그대로, 밤이면 어둡게(건물 그림은 따로 밤 그림을 쓴다)
+@export var ambient: Color = Color(1, 1, 1)
+## 앞길(보도·도로)을 밤빛으로 얼마나 물들일지(`night`일 때만, ArrestBackdrop.night_ground_tint)
+@export_range(0.0, 1.0, 0.01) var ground_tint: float = 0.16
+## 인물 윤곽광(림) — 빛이 오는 쪽(인물 → 광원, 화면 기준)의 가장자리에 맺힌다
+@export var rim_color: Color = Color(1.0, 0.96, 0.86)
+@export var rim_dir: Vector2 = Vector2(-0.5, -1.0)
+@export_range(0.0, 2.0, 0.01) var rim_strength: float = 0.35
+## 빛을 정면으로 받는 가장자리만(1) ~ 옆면까지 넓게(0)
+@export_range(0.0, 1.0, 0.01) var rim_focus: float = 0.55
+## 광원 반대쪽 가장자리 그늘 / 파츠 안 위아래 명암
+@export_range(0.0, 1.0, 0.01) var shade_strength: float = 0.25
+@export_range(0.0, 0.5, 0.01) var gradient_strength: float = 0.08
+## 경광등이 건물·길·인물을 물들이는 세기(낮에는 약하게, 밤에는 세게)
+@export_range(0.0, 1.0, 0.01) var siren_power: float = 0.15
+## 그림 속 불빛(간판·가게 창) — 그림 px 네모와 색(알파 = 세기). 길에 비친 빛과 1층 가게 불빛이 보도에 쏟아진 자리를 그린다
+@export var light_rects: Array[Rect2] = []
+@export var light_colors: PackedColorArray = PackedColorArray()
+## 길에 비친 간판 빛의 세기(젖은 길처럼 세로로 길게) — 0이면 안 그린다
+@export_range(0.0, 1.0, 0.01) var reflection: float = 0.0
+## 화면 가장자리를 남색으로 어둡게(밤) — 0이면 안 그린다
+@export_range(0.0, 1.0, 0.01) var vignette: float = 0.0
+## 윤곽광 두께(화면 px)
+@export_range(0.5, 8.0, 0.1) var rim_px: float = 2.2

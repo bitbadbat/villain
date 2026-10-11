@@ -26,6 +26,10 @@ const GuideScript = preload("res://ui/result/PerspectiveGuide.gd")
 const ResultFaces = preload("res://ui/result/ResultFaces.gd")
 const KidScript = preload("res://ui/result/ArrestKid.gd")
 const KID_SCENE_PATH := "res://characters/floornoise/Kid.tscn"
+const LightingScript = preload("res://ui/result/ArrestLighting.gd")
+const LIGHT_SHADER = preload("res://ui/result/ArrestLight.gdshader")
+## 사람 위 빛 번짐 층의 z — 우는 아이(KID_Z)보다 위, 검은 막(FADE_Z)보다 아래
+const AIR_LIGHT_Z := 10
 ## 우는 아이를 그리는 높이(리그 조각 z_index 1~3보다 위) / 검은 막(Fade) 높이 — 막은 무엇보다 위에 있어야 한다
 const KID_Z := 4
 const FADE_Z := 50
@@ -43,6 +47,10 @@ const LOOKBACK_AT := 1.1
 const BEAT_AT := 1.3
 const TUG_AT := 1.65
 const FINISH_AT := 3.0
+## 엄마가 이긴 쪽(늦게 울기 시작한) 아이는 이만큼 운 뒤에 경찰한테 툭 맞는다
+const KID_CRY_BEFORE_TAP := 0.9
+## 경찰이 뒤돌아보기 시작하고 이만큼 뒤에 친다 — 고개 돌리는 중엔 머리가 납작해져서 그때 치면 머리가 없어 보였다(실측)
+const KID_TAP_AFTER_LOOK := 0.45
 
 @export_group("카메라(원근)")
 ## 지평선 높이(1280x720 기준 화면 px). 카메라가 사람 가슴 높이라 경찰 얼굴보다 아래에 온다
@@ -91,6 +99,8 @@ const FINISH_AT := 3.0
 ## i번째 그림이 crowd_feet[i] 자리에 선다. 크기는 그림의 칠해진 높이로 맞추니 캔버스 여백은 아무래도 된다.
 ## 비어 있는 자리는 얼굴 없는 구경꾼이 채운다(그림이 오기 전에도 무리가 차 보이게)
 @export var onlooker_textures: Array[Texture2D] = []
+## 자리마다 부위 리그 씬(`ui/result/onlookers/`, OnlookerRig.gd) — 있으면 위 그림 대신 리그가 선다(눈이 행렬을 따라가고 깜빡이고 입을 움직인다)
+@export var onlooker_scenes: Array[PackedScene] = []
 ## 구경꾼 자리(화면 발 위치, 밀고 들어가기 전) — 앞(아래)에 있는 것일수록 크게 나온다. 행렬(경찰·두 사람)보다 늘 뒤에 그려진다.
 ## 0번 = **경찰과 패자 사이 먼 뒤**(작게 보여서 그 틈에 들어간다), 1~4번 = 승자 오른쪽에서 **오른쪽으로 갈수록 앞(아래)에 서는 사선**.
 ## 그림은 왼쪽(연행)을 보니 얼굴이 머리 왼쪽에 있는데, 오른쪽 사람이 앞에 서면 왼쪽 사람의 **뒤통수만** 가린다.
@@ -134,6 +144,8 @@ const FINISH_AT := 3.0
 @export var kid_lag: float = 0.12
 ## 엄마가 처음부터 끌려가는 쪽(패자)일 때 울기 시작하는 때(초). 승자 엄마면 "어? 나도?"(BEAT_AT) 직후에 터진다
 @export var kid_cry_at: float = 0.12
+## 툭 맞을 때 아이가 서는 자리 — 경찰 발에서 (뒤쪽 x, 카메라 쪽 z), 월드 단위(캐릭터 키 = 1)
+@export var kid_tap_spot: Vector2 = Vector2(0.42, -0.3)
 
 @onready var _stage: Node2D = $Stage
 @onready var _backdrop: Node2D = $Stage/Backdrop
@@ -180,8 +192,15 @@ var _guide: Node2D = null
 var _day_haze: Color = Color(0.85, 0.89, 0.95)
 ## 경광등 박자 시계 — 사이렌이 울리면 소리가 들리는 지점에 맞추고, 없거나 꺼지면 이어서 센다
 var _siren_clock: float = 0.0
-## 우는 아이들 — {node, parent(엄마 actor), cry_at} (거울전이면 둘)
+## 우는 아이들 — {node, parent(엄마 actor), cry_at, tap_at, slot} (거울전이면 둘)
 var _kids: Array = []
+## 조명(ArrestLighting) — 건물 위·사람 밑 빛 층 / 사람 위 번짐 층 / 인물 조각이 같이 쓰는 윤곽광 재질(ArrestLight.gdshader)
+var _ground_light: Node2D = null
+var _air_light: Node2D = null
+var _vignette: Node2D = null
+var _light_mat: ShaderMaterial = null
+## 경광등이 인물을 물들이는 세기(맵 설정 siren_power)
+var _siren_power: float = 0.15
 
 func _ready() -> void:
 	layer = 25
@@ -196,6 +215,8 @@ func _ready() -> void:
 	_edge_material = _building.material
 	_build_mobs()
 	_build_onlookers()
+	_build_lighting()
+	_light_parts(_crowd_layer)
 	_apply_backdrop(default_backdrop if default_backdrop != null else load(DEFAULT_BACKDROP))
 	if show_perspective_guide:
 		_guide = Node2D.new()
@@ -252,6 +273,12 @@ func play(info: Dictionary) -> void:
 		[TUG_AT + 0.05, _tug_squash],
 		[FINISH_AT, _finish],
 	]
+	# 아이를 툭 치기 직전에 경찰이 뒤돌아본다(엄마가 진 쪽은 원래 뒤돌아보는 때와 겹친다 — 다시 불러도 이어서 본다)
+	for kid in _kids:
+		var look_at: float = float(kid["tap_at"]) - KID_TAP_AFTER_LOOK
+		# 원래 뒤돌아보는 때와 겹치면 한 번만(다시 부르면 고개를 처음부터 다시 돌린다)
+		if absf(look_at - LOOKBACK_AT) > 0.05:
+			_events.append([look_at, _police_look_back])
 	_events.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	_next_event = 0
 	_siren = ResultSfx.play(self, ResultSfx.SIREN, -12.0, 1.0, true)
@@ -351,6 +378,7 @@ func _make_actor(path: String, feet: Vector2, layer_node: Node2D, role: StringNa
 	holder.add_child(rig)
 	if p2_color:
 		rig.set_player_two(true)
+	_light_parts(rig)
 	# 키는 소품을 뺀 몸으로 잰다(키보드·가방 크기에 키가 휘둘리지 않게)
 	_hide_props(rig)
 	var measured: Array = _measure(rig, path)
@@ -519,9 +547,13 @@ func _add_kid(actor: Dictionary, character_name: String, cry_at: float) -> void:
 	# 승자 손(수갑)이 아이 얼굴·"뿌에엥" 글자를 덮었다(실측). Fade는 _ready에서 더 위(FADE_Z)로 올려 둔다
 	node.z_index = KID_Z
 	_line_layer.add_child(node)   # _ready()가 아이 그림을 만든다 — 그 뒤에 잰다
+	_light_parts(node)
 	var measured: Array = _measure(node.call("kid_root"), KID_SCENE_PATH)
 	node.call("set_bounds", measured[0])
-	_kids.append({"node": node, "parent": actor, "cry_at": cry_at})
+	# 울다가 경찰한테 "툭" 맞는 때 — 경찰이 다 돌아본 뒤(KID_TAP_AFTER_LOOK)에 친다. 엄마가 진 쪽은 원래 뒤돌아보는 때(LOOKBACK_AT) 기준,
+	# 늦게 울기 시작한 아이(엄마가 이긴 쪽·무승부)는 KID_CRY_BEFORE_TAP초 울린 뒤
+	var tap_at: float = maxf(cry_at + KID_CRY_BEFORE_TAP, LOOKBACK_AT + KID_TAP_AFTER_LOOK)
+	_kids.append({"node": node, "parent": actor, "cry_at": cry_at, "tap_at": tap_at, "slot": _kids.size()})
 
 ## 아이 한 프레임 — 엄마 발에서 kid_offset만큼 떨어진 땅을 같은 카메라로 투영하고, 행렬을 kid_lag초 늦게 따라 걷는다
 func _update_kid(kid: Dictionary, tug_s: float) -> void:
@@ -532,6 +564,15 @@ func _update_kid(kid: Dictionary, tug_s: float) -> void:
 	var walking: bool = _playing and ((t > WALK_1.x and t < WALK_1.y) or (t > WALK_2.x and t < WALK_2.y))
 	var base: Vector3 = parent["world"]
 	var world: Vector3 = base + Vector3(kid_offset.x + walked, 0.0, kid_offset.y)
+	# 툭 맞기 전에 경찰 옆(뒤쪽)으로 쫓아간다 — 맞은 뒤에도 그 자리에서 행렬을 따라 걷는다
+	var tap_at: float = float(kid["tap_at"])
+	var approach: float = smoothstep(tap_at - 0.65, tap_at - 0.12, _time) if _playing and not _police.is_empty() else 0.0
+	if approach > 0.0:
+		var police_walked: float = -walk_distance * _walk_progress(_time)
+		var spot: Vector2 = kid_tap_spot + Vector2(0.22, -0.12) * float(kid["slot"])
+		var near: Vector3 = (_police["world"] as Vector3) + Vector3(spot.x + police_walked, 0.0, spot.y)
+		world = world.lerp(near, approach)
+		walking = walking or (approach < 1.0)
 	node.position = _project(world)
 	var px: float = _px_per_unit(world.z) * cast_scale * kid_height
 	var rx: float = px * 0.5
@@ -556,7 +597,8 @@ func _update_kid(kid: Dictionary, tug_s: float) -> void:
 				avoid.append(_rect_in(to_kid, box))
 	var vis: Rect2 = get_viewport().get_visible_rect()
 	node.call("set_layout_hints", avoid, _rect_in(to_kid, vis))
-	node.call("tick", px, shadow, -1.0, cry_t, _clock, walking, lurch)
+	var sulk_t: float = _time - tap_at if _playing and _time >= tap_at and not _police.is_empty() else -1.0
+	node.call("tick", px, shadow, -1.0, cry_t, _clock, walking, lurch, sulk_t)
 
 # ---------------------------------------------------------------- 매 프레임
 
@@ -572,6 +614,7 @@ func _update_scene() -> void:
 		_update_actor(actor, walking, walked, tug_s)
 	for kid in _kids:
 		_update_kid(kid, tug_s)
+	_police_tap()
 	_update_ropes(tug_s)
 	_update_building()
 	_backdrop.set("vanish_x", vanish_x)
@@ -592,6 +635,7 @@ func _update_scene() -> void:
 	_car.set("siren_tone", int(tone.x))
 	_car.set("tone_time", tone.y)
 	_backdrop.set("facade_ground_y", _project(_building_world).y)
+	_update_lighting()
 	for layer_node in [_mob_back, _mob_front, _crowd_layer]:
 		if layer_node == null:
 			continue
@@ -601,7 +645,8 @@ func _update_scene() -> void:
 		layer_node.set("focal", focal)
 		layer_node.set("dolly", _dolly)
 		layer_node.set("time", _clock)
-	# 구경꾼은 리그들이 이번 프레임 움직인 뒤 자리를 맞춘다(그림자·몸짓까지)
+	# 구경꾼은 리그들이 이번 프레임 움직인 뒤 자리를 맞춘다(그림자·몸짓까지). 눈은 행렬 가운데(두 사람 머리 사이)를 본다
+	_crowd_layer.set("look_target", _procession_center())
 	_crowd_layer.call("refresh")
 
 func _update_actor(actor: Dictionary, walking: bool, walked: float, tug_s: float) -> void:
@@ -715,6 +760,50 @@ func _update_building() -> void:
 
 # ---------------------------------------------------------------- 사건
 
+## 구경꾼이 바라볼 곳(전역 좌표) — 패자·승자 머리 가운데. 행렬이 아직 없으면 문 앞
+func _procession_center() -> Vector2:
+	var points: Array = []
+	for actor in [_first, _second]:
+		if not actor.is_empty():
+			var head: Node2D = actor["head"]
+			points.append(head.global_position if head != null else (actor["rig"] as Node2D).global_position)
+	if points.is_empty():
+		return _stage.to_global(Vector2(door_screen_x, facade_base_y - 60.0))
+	var sum := Vector2.ZERO
+	for p in points:
+		sum += p
+	return sum / points.size()
+
+## 경찰이 빈손(앞손 HandR — 뒷손은 밧줄)으로 쫓아온 아이 머리를 "툭". 손은 팔 없이 떠 있어서 손만 날아가도 게임처럼 보인다.
+## 들어 올림(0.22초) → 내리침(0.06초) → 잠깐 얹고(0.1초) → 제자리(0.3초). 리그·_pose_hands가 잡은 뒤에 덮어쓴다
+func _police_tap() -> void:
+	if _police.is_empty() or not _playing:
+		return
+	var hand: Node2D = _police["hand_r"]
+	if hand == null:
+		return
+	for kid in _kids:
+		var t: float = _time - float(kid["tap_at"])
+		if t < -0.3 or t > 0.4:
+			continue
+		var kid_node: Node2D = kid["node"]
+		var contact: Vector2 = kid_node.call("tap_point_global")
+		var px: float = _px_per_unit((_police["world"] as Vector3).z) * cast_scale
+		var above: Vector2 = contact + Vector2(0.06, -0.3) * px
+		var rest: Vector2 = hand.global_position
+		var target: Vector2
+		if t < -0.08:
+			var u: float = smoothstep(-0.3, -0.08, t)
+			target = rest.lerp(above, u)
+		elif t < 0.0:
+			target = above.lerp(contact, smoothstep(-0.08, 0.0, t))
+		elif t < 0.1:
+			target = contact + Vector2(0.0, 0.02 * px * sin(t / 0.1 * PI))
+		else:
+			target = contact.lerp(rest, smoothstep(0.1, 0.4, t))
+		hand.global_position = target
+		return
+
 func _police_look_back() -> void:
 	if not _police.is_empty():
 		(_police["rig"] as BodyRig).play_lookback()
@@ -730,6 +819,7 @@ func _winner_deflates() -> void:
 		var rig: BodyRig = actor["rig"]
 		rig.play_squash(Vector2(0.9, 1.1))
 		_add_sweat(actor)
+	_crowd_layer.call("react")
 
 func _add_sweat(actor: Dictionary) -> void:
 	var head_rect: Rect2 = actor["head_rect"]
@@ -799,6 +889,7 @@ func _apply_backdrop(config: Resource) -> void:
 			(flag as CanvasItem).visible = bool(config.get("show_flags"))
 	_building.self_modulate.a = 0.45 if show_perspective_guide else 1.0
 	_set_night(bool(config.get("night")), bool(config.get("night_moon")))
+	_apply_lighting(config)
 	_update_building()
 
 ## 밤 배경으로 바꾸거나 되돌린다 — 하늘(ArrestBackdrop)과, 하늘빛 안개에 녹던 얼굴 없는 무리의 공기색.
@@ -825,7 +916,7 @@ func _build_onlookers() -> void:
 	for feet in crowd_feet:
 		worlds.append(_ground_to_world(feet))
 	_crowd_layer.set("mob_shade", mob_shade)
-	_crowd_layer.call("setup", worlds, onlooker_textures, onlooker_flip, onlooker_sizes, onlooker_height, 5)
+	_crowd_layer.call("setup", worlds, onlooker_textures, onlooker_flip, onlooker_sizes, onlooker_height, 5, onlooker_scenes)
 
 func _make_mob_layer(feet_list: Array[Vector2], seed_value: int) -> Node2D:
 	var layer_node := Node2D.new()
@@ -837,6 +928,94 @@ func _make_mob_layer(feet_list: Array[Vector2], seed_value: int) -> Node2D:
 	layer_node.set("shade", mob_shade)
 	layer_node.call("setup", worlds, seed_value)
 	return layer_node
+
+# ---------------------------------------------------------------- 조명
+
+## 빛 층 두 장(건물 바로 위 / 사람 위)과 인물 윤곽광 재질을 만든다
+func _build_lighting() -> void:
+	_light_mat = ShaderMaterial.new()
+	_light_mat.shader = LIGHT_SHADER
+	_ground_light = Node2D.new()
+	_ground_light.set_script(LightingScript)
+	_ground_light.name = "GroundLight"
+	_stage.add_child(_ground_light)
+	_stage.move_child(_ground_light, _building.get_index() + 1)
+	_air_light = Node2D.new()
+	_air_light.set_script(LightingScript)
+	_air_light.name = "AirLight"
+	_air_light.set("mode", 1)
+	_air_light.z_index = AIR_LIGHT_Z
+	_stage.add_child(_air_light)
+	# 가장자리 어둡기는 번짐 밑 — 경광등 번짐까지 어두워지면 안 된다
+	_vignette = Node2D.new()
+	_vignette.set_script(LightingScript)
+	_vignette.name = "Vignette"
+	_vignette.set("mode", 2)
+	_vignette.z_index = AIR_LIGHT_Z - 1
+	_stage.add_child(_vignette)
+
+## 맵 설정(ArrestBackdropConfig 조명 묶음)을 빛 층·사람 층·윤곽광에 넣는다
+func _apply_lighting(config: Resource) -> void:
+	for light in [_ground_light, _air_light, _vignette]:
+		light.call("configure", config)
+	# 밤이면 사람·차·구경꾼을 어둡게 — 윤곽광은 셰이더가 그 위에 더해서 어둠 속에서도 빛난다
+	var ambient: Color = config.get("ambient")
+	for layer_node in [_line_layer, _crowd_layer, _mob_back, _mob_front, _car]:
+		if layer_node != null:
+			layer_node.modulate = ambient
+	_backdrop.set("night_ground_tint", float(config.get("ground_tint")))
+	_siren_power = float(config.get("siren_power"))
+	_light_mat.set_shader_parameter("light_dir", config.get("rim_dir"))
+	_light_mat.set_shader_parameter("rim_color", config.get("rim_color"))
+	_light_mat.set_shader_parameter("rim_strength", float(config.get("rim_strength")))
+	_light_mat.set_shader_parameter("rim_focus", float(config.get("rim_focus")))
+	_light_mat.set_shader_parameter("rim_px", float(config.get("rim_px")))
+	_light_mat.set_shader_parameter("shade_strength", float(config.get("shade_strength")))
+	_light_mat.set_shader_parameter("gradient_strength", float(config.get("gradient_strength")))
+
+## 인물 그림 조각(Sprite2D)에 윤곽광 재질을 붙인다 — 스크립트가 달린 표시와 이미 다른 재질이 있는 조각은 건드리지 않는다
+## (게임의 `BodyRig.set_rim_light()`와 같은 규칙)
+func _light_parts(node: Node) -> void:
+	for child in node.get_children():
+		if child is Sprite2D and child.get_script() == null and child.material == null:
+			(child as Sprite2D).material = _light_mat
+		_light_parts(child)
+
+## 빛 층에 카메라·건물 자리·경광등을 넣고, 경광등이 번쩍이면 인물 윤곽광에 그 색을 싣는다
+func _update_lighting() -> void:
+	if _ground_light == null:
+		return
+	var state: Dictionary = _car.call("light_state")
+	var rect: Rect2 = get_viewport().get_visible_rect()
+	var view := Rect2(rect.position - _stage.position, rect.size)
+	for light in [_ground_light, _air_light, _vignette]:
+		light.set("vanish_x", vanish_x)
+		light.set("horizon_y", horizon_y)
+		light.set("camera_height", camera_height)
+		light.set("focal", focal)
+		light.set("dolly", _dolly)
+		light.set("building_pos", _building.position)
+		light.set("building_scale", _building.scale.x)
+		light.set("building_ground_px", _building_height)
+		light.set("building_z", _building_world.z)
+		light.set("view_rect", view)
+		light.set("siren", state)
+	var strength: float = 0.0
+	var color: Color = state.get("red_color", Color.RED)
+	if bool(state.get("red_on", false)):
+		strength = 1.0
+	elif bool(state.get("blue_on", false)):
+		color = state.get("blue_color", Color.BLUE)
+		strength = 1.0
+	# 빛은 경찰차 등에서 행렬 쪽으로 온다 — 인물 → 등 방향
+	var dir := Vector2(-1.0, -0.4)
+	if not _police.is_empty():
+		var to_car: Vector2 = (state.get("red", Vector2.ZERO) as Vector2) - _project(_police["world"])
+		if to_car.length() > 1.0:
+			dir = to_car.normalized()
+	_light_mat.set_shader_parameter("siren_dir", dir)
+	_light_mat.set_shader_parameter("siren_color", color)
+	_light_mat.set_shader_parameter("siren_strength", strength * _siren_power * 1.6)
 
 ## 가이드에 지금 카메라·문 자리·키 막대 자리를 넣는다
 func _update_guide() -> void:

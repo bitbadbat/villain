@@ -5,6 +5,8 @@ extends Node2D
 ## 전에는 이 판에 안 나온 로스터 리그가 서 있었는데, 그래서 둘이 싸워도 화면에 세 번째 로스터가 나왔다 — 그걸 없앴다.
 ##
 ## - 전신 그림 한 장씩(투명 배경 PNG)을 장면의 `crowd_feet` 자리에 세우고 **ArrestScene과 같은 카메라**로 투영한다(멀수록 작다)
+## - **부위 리그 씬**(`OnlookerRig.gd`, 2026-10-11)이 있는 자리는 그림 대신 리그를 세운다 — 눈동자가 행렬(`look_target`)을 따라가고
+##   깜빡이고 입을 움직이며, "어? 나도?" 때 `react()`로 놀란다. 리그가 없는 사람은 지금처럼 통짜 그림
 ## - 크기는 **그림에서 칠해진 영역의 높이**로 맞춘다(캔버스 여백은 그림마다 달라서) — 그 깊이에서 캐릭터 키 x height
 ## - 리미티드 애니: 숨쉬기 + 가끔 폴짝 + 연행 쪽(왼쪽)으로 목을 빼듯 기울기 + 가끔 옆 사람을 휙 돌아봤다가(좌우 뒤집기) 돌아온다
 ## - 그림이 아직 없는 자리는 **얼굴 없는 구경꾼(MobCrowd) 한 명**으로 채운다 — 무리가 비어 보이지 않게
@@ -29,6 +31,8 @@ var time: float = 0.0
 ## 얼굴 없는 사람(빈자리 채우기)의 밝기·공기색 — 장면이 setup 전에 넣고, 밤이면 공기색을 바꾼다
 var mob_shade: float = 1.0
 var mob_haze: Color = Color(0.85, 0.89, 0.95)
+## 리그 구경꾼이 바라볼 곳(전역 좌표) — 장면이 매 프레임 행렬 가운데를 넣는다
+var look_target: Vector2 = Vector2(640, 420)
 
 ## 사람마다 {node, body, sprite, mob, world, k_unit, anchor, flip, size, ...}
 var _figures: Array = []
@@ -37,8 +41,9 @@ var _figures: Array = []
 static var _opaque_cache: Dictionary = {}
 
 ## 구경꾼을 새로 세운다. worlds = 자리마다 발 위치(월드 X, 0, Z), textures[i]가 비면 그 자리는 얼굴 없는 사람.
-## flips[i] = 그 그림을 좌우로 뒤집어 세울지, sizes[i] = 그 사람 키 배율(비면 1). height = 캐릭터 키 대비 키
-func setup(worlds: Array, textures: Array, flips: Array, sizes: Array, height: float, seed_value: int = 5) -> void:
+## flips[i] = 그 그림을 좌우로 뒤집어 세울지, sizes[i] = 그 사람 키 배율(비면 1). height = 캐릭터 키 대비 키.
+## scenes[i]에 부위 리그 씬이 있으면 그림 대신 그 리그를 세운다
+func setup(worlds: Array, textures: Array, flips: Array, sizes: Array, height: float, seed_value: int = 5, scenes: Array = []) -> void:
 	for child in get_children():
 		child.queue_free()
 	_figures.clear()
@@ -50,6 +55,7 @@ func setup(worlds: Array, textures: Array, flips: Array, sizes: Array, height: f
 		var size_mul: float = float(sizes[i]) if i < sizes.size() and float(sizes[i]) > 0.0 else 1.0
 		entries.append({
 			"world": worlds[i], "tex": tex,
+			"scene": scenes[i] as PackedScene if i < scenes.size() else null,
 			"flip": i < flips.size() and bool(flips[i]),
 			"size": height * size_mul * rng.randf_range(0.97, 1.03),
 			"phase": rng.randf() * TAU,
@@ -63,7 +69,9 @@ func setup(worlds: Array, textures: Array, flips: Array, sizes: Array, height: f
 	# 먼(z가 큰) 사람부터 붙여야 앞사람이 뒷사람을 가린다
 	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return (a["world"] as Vector3).z > (b["world"] as Vector3).z)
 	for e in entries:
-		if e["tex"] != null:
+		if e["scene"] != null:
+			_figures.append(_make_rig_figure(e))
+		elif e["tex"] != null:
 			_figures.append(_make_sprite_figure(e))
 		else:
 			_figures.append(_make_mob_figure(e))
@@ -87,6 +95,30 @@ func _make_sprite_figure(e: Dictionary) -> Dictionary:
 	e["k_unit"] = float(e["size"]) / maxf(o.size.y, 1.0)
 	e["half_w"] = o.size.x * 0.5
 	return e
+
+## 부위 리그 구경꾼 — 리그 원점(두 발 가운데 땅)이 곧 발밑이다. 키는 리그가 잰 쉬는 자세 네모로 맞춘다
+func _make_rig_figure(e: Dictionary) -> Dictionary:
+	var node := FigureShadow.new()
+	add_child(node)
+	var body := Node2D.new()
+	node.add_child(body)
+	var rig := (e["scene"] as PackedScene).instantiate() as Node2D
+	body.add_child(rig)   # add_child가 _ready()를 바로 불러 쉬는 자세 네모를 잰다
+	var b: Rect2 = rig.call("bounds")
+	rig.position = Vector2(0.0, -b.end.y)
+	e["node"] = node
+	e["body"] = body
+	e["rig"] = rig
+	e["k_unit"] = float(e["size"]) / maxf(b.size.y, 1.0)
+	# 그림자는 몸 폭만 — 지팡이·꼬치처럼 옆으로 삐져나온 소품까지 넣으면 너무 넓다
+	e["half_w"] = b.size.x * 0.35
+	return e
+
+## "어? 나도?" — 리그 구경꾼이 다 같이 놀란다(통짜 그림은 그대로)
+func react() -> void:
+	for f in _figures:
+		if f.has("rig"):
+			(f["rig"] as Node).call("react")
 
 func _make_mob_figure(e: Dictionary) -> Dictionary:
 	var mob := Node2D.new()
@@ -119,6 +151,13 @@ func refresh() -> void:
 			node.set("time", time)
 			continue
 		_pose_sprite(f)
+		if f.has("rig"):
+			# 옆 사람을 휙 돌아보는 동안은 눈도 그쪽(돌아본 쪽 = 평소 보던 반대쪽)을 본다
+			var target: Vector2 = look_target
+			var turn_at: float = float(f["turn_at"])
+			if turn_at >= 0.0 and time >= turn_at and time < turn_at + TURN_TIME:
+				target = node.global_position + Vector2(-400.0 if bool(f["flip"]) else 400.0, -60.0)
+			(f["rig"] as Node).call("tick", time, target)
 
 func _pose_sprite(f: Dictionary) -> void:
 	var world: Vector3 = f["world"]

@@ -6,6 +6,9 @@ extends Node2D
 ##  - 자리·크기는 ArrestScene이 **같은 카메라로 투영**해서 매 프레임 넣어 준다 — 이 노드의 position = 아이 발밑(화면 좌표)
 ##  - 눈물 분수·울음 선·"뿌에엥" 글자는 코드로 그린다. ⚠️ 주아체에 기호 글리프가 거의 없어서 **글자만 폰트**, 물결·선은 직접 그린다
 ##  - 좌우: 아이 그림(Puppet)만 뒤집는다. 글자·눈물은 안 뒤집힌 화면 좌표(Fx)에 그려야 글자가 거울 글씨가 안 된다
+##  - **울다가 경찰한테 머리를 "툭" 맞고 시무룩해진다**(2026-10-11 팀 피드백: "우는 버전보다 시무룩한 버전이 좋겠다 —
+##    처음엔 울다가 연행하는 경찰이 한 대 툭 치면 시무룩"). 쫓아가 경찰 옆에 서는 자리·경찰 손은 ArrestScene이 맡고,
+##    여기선 sulk_t(맞은 뒤 흐른 초)를 받아 얼굴(시무룩한아이.png)·움찔·"툭" 글자·우울 선·소리를 그린다
 ## class_name을 일부러 안 단다(새 class_name을 바로 타입으로 쓰면 파싱 에러) — ArrestScene이 preload해서 노드에 붙인다
 
 const ResultSfx = preload("res://ui/result/ResultSfx.gd")
@@ -28,6 +31,9 @@ var cry_eyes: Array[Vector2] = [Vector2(1120, 700), Vector2(965, 672)]
 ## 우는 얼굴 그림 속 **입 자리**(px) — 울음 선이 여기서 앞으로 퍼진다
 var cry_mouth: Vector2 = Vector2(1010, 900)
 var cry_text: String = "뿌에엥"
+## 맞은 뒤 얼굴 — 팀원 그림. 게임 속 아이 머리와 같은 1374x1145 캔버스라 배율 그대로
+var sulk_face: Texture2D = preload("res://sprite/층간소음/시무룩한아이.png")
+var tap_text: String = "툭"
 
 ## 칠해진 아이 그림 네모(Kid.tscn 좌표) — ArrestScene이 재서 `set_bounds()`로 넣는다. 키를 맞추는 기준
 var _bounds: Rect2 = Rect2(-150, -155, 300, 295)
@@ -46,8 +52,11 @@ var _shadow: Vector2 = Vector2.ZERO
 var _facing: float = -1.0
 ## 울기 시작하고 흐른 초(음수면 아직 안 운다) / 장면 시계(실제 초)
 var _cry_t: float = -1.0
+## 경찰한테 맞고 흐른 초(음수면 아직)
+var _sulk_t: float = -1.0
 var _clock: float = 0.0
 var _sounded: bool = false
+var _tap_sounded: bool = false
 ## 글자가 피할 네모들(이 노드 좌표 — 경찰·두 사람의 머리)과 보이는 화면(같은 좌표). ArrestScene이 `set_layout_hints()`로 넣는다
 var _avoid: Array = []
 var _view: Rect2 = Rect2()
@@ -98,6 +107,12 @@ func head_box_global() -> Rect2:
 	var c: Vector2 = _face_point(_head.texture.get_size() * 0.5, self)
 	return Rect2(get_global_transform() * (c - Vector2(0.3, 0.28) * _px), Vector2(0.6, 0.56) * _px)
 
+## 경찰 손이 내려앉을 머리 꼭대기(캔버스 좌표)
+func tap_point_global() -> Vector2:
+	if _head == null or _head.texture == null:
+		return global_position
+	return get_global_transform() * _face_point(_head.texture.get_size() * Vector2(0.55, 0.1), self)
+
 ## 고른 "뿌에엥" 글자 네모(캔버스 좌표). 아직 안 골랐으면 빈 네모
 func text_box_global() -> Rect2:
 	if not _text_box.has_area():
@@ -105,38 +120,49 @@ func text_box_global() -> Rect2:
 	return Rect2(get_global_transform() * _text_box.position, _text_box.size)
 
 ## 한 프레임 — px = 아이 키(화면 px), shadow = 그림자 반지름, cry_t = 울기 시작하고 흐른 초(음수면 아직),
-## clock = 장면 시계, walking = 행렬이 걷는 중인지, lurch = 밧줄이 홱 당겨져 휘청이는 정도(0~1)
-func tick(px: float, shadow: Vector2, facing: float, cry_t: float, clock: float, walking: bool, lurch: float) -> void:
+## clock = 장면 시계, walking = 행렬이 걷는 중인지(또는 경찰한테 쫓아가는 중), lurch = 밧줄이 홱 당겨져 휘청이는 정도(0~1),
+## sulk_t = 경찰한테 "툭" 맞고 흐른 초(음수면 아직 — 그때까지는 운다)
+func tick(px: float, shadow: Vector2, facing: float, cry_t: float, clock: float, walking: bool, lurch: float, sulk_t: float = -1.0) -> void:
 	_px = maxf(px, 1.0)
 	_shadow = shadow
 	_facing = -1.0 if facing < 0.0 else 1.0
 	_cry_t = cry_t
+	_sulk_t = sulk_t
 	_clock = clock
-	var crying: bool = cry_t >= 0.0
+	var sulking: bool = sulk_t >= 0.0
+	var crying: bool = cry_t >= 0.0 and not sulking
 	if crying and not _sounded:
 		_sounded = true
 		ResultSfx.play(self, CRY_SOUND, -4.0)
+	if sulking and not _tap_sounded:
+		_tap_sounded = true
+		ResultSfx.play(self, ResultSfx.TAP, -8.0, 1.7)
 	if _head != null:
-		_head.texture = cry_face if crying and cry_face != null else _rest_face
-	# --- 몸: 울 땐 제자리에서 발을 동동 구르고(빠르게), 안 울 땐 아장아장 따라 걷는다 ---
-	var period: float = 0.28 if crying else 0.36
+		if sulking and sulk_face != null:
+			_head.texture = sulk_face
+		else:
+			_head.texture = cry_face if crying and cry_face != null else _rest_face
+	# --- 몸: 울 땐 제자리에서 발을 동동 구르고(빠르게), 안 울 땐 아장아장, 시무룩하면 터벅터벅(느리게) 따라 걷는다 ---
+	var period: float = 0.28 if crying else (0.5 if sulking else 0.36)
 	var p: float = fposmod(clock / period, 1.0)
 	var moving: bool = walking or crying
 	# 한 발씩 번갈아 디딘다 — 디딜 때마다(반 박자) 몸이 살짝 솟았다 내려앉는다
 	var step: float = absf(sin(p * TAU)) if moving else 0.0
 	var contact: float = 1.0 - step
-	var hop_h: float = 0.035 if crying else 0.02
+	var hop_h: float = 0.035 if crying else (0.01 if sulking else 0.02)
 	# 울기 시작한 순간 한 번 "팍" — 움찔 솟았다 내려앉는다
 	var burst: float = _pulse(cry_t, 0.06, 6.0) if crying else 0.0
-	var sx: float = 1.0 + 0.05 * contact * float(moving) - 0.06 * burst
-	var sy: float = 1.0 - 0.06 * contact * float(moving) + 0.03 * step + 0.1 * burst
+	# 머리를 맞은 순간 — 쿵 눌렸다가 돌아온다
+	var hit: float = _pulse(sulk_t, 0.04, 7.0) if sulking else 0.0
+	var sx: float = 1.0 + 0.05 * contact * float(moving) - 0.06 * burst + 0.1 * hit
+	var sy: float = 1.0 - 0.06 * contact * float(moving) + 0.03 * step + 0.1 * burst - 0.17 * hit
 	# 흐느낌 — 몸이 잘게 들썩인다
 	var sob: float = sin(clock * 37.0) * 0.005 * _px if crying else 0.0
 	var k: float = _px / maxf(_bounds.size.y, 1.0)
 	_puppet.position = Vector2(0.0, -step * hop_h * _px - burst * 0.05 * _px + sob)
 	_puppet.scale = Vector2(k * sx * _facing, k * sy)
 	# 몸을 좌우로 흔든다(떼쓰기) + 밧줄이 홱 당겨지면 쫓아오다 앞으로 휘청 — 보는 쪽으로 기운다
-	var sway: float = sin(p * TAU) * deg_to_rad(5.0 if crying else 2.5) * float(moving)
+	var sway: float = sin(p * TAU) * deg_to_rad(5.0 if crying else (1.2 if sulking else 2.5)) * float(moving)
 	_puppet.rotation = sway + lurch * deg_to_rad(14.0) * _facing
 	# --- 자세: 제자리(Kid.tscn)에서 출발해 조각별로 섞는다(섞은 값이 프레임마다 쌓이지 않게) ---
 	for part_name in _rest:
@@ -147,7 +173,9 @@ func tick(px: float, shadow: Vector2, facing: float, cry_t: float, clock: float,
 		part.position = rest[0]
 		part.rotation = rest[1]
 	# 디딜 때 무릎을 굽힌다 — 착지 자세에서 **몸·머리만** 빌린다(발까지 섞으면 다리를 찢은 것처럼 벌어졌다, 실측)
-	_put_pose(land_pose, clampf(contact * float(moving) * (0.45 if crying else 0.25) + lurch * 0.5, 0.0, 1.0), ["KidBody", "KidHead"])
+	# 시무룩하면 늘 무릎을 조금 굽혀 축 처진 채로
+	var slump: float = 0.35 + 0.4 * hit if sulking else 0.0
+	_put_pose(land_pose, clampf(contact * float(moving) * (0.45 if crying else 0.25) + lurch * 0.5 + slump, 0.0, 1.0), ["KidBody", "KidHead"])
 	if crying:
 		# 두 팔을 휘저으며 운다 — 만세 자세의 **손만** 빌려 올렸다 내렸다
 		var arms_up: float = 0.55 + 0.45 * sin(p * TAU + 0.6) + 0.3 * burst
@@ -164,6 +192,12 @@ func tick(px: float, shadow: Vector2, facing: float, cry_t: float, clock: float,
 	if _head != null and crying:
 		# 고개를 뒤로 젖히고(턱이 들림 — 아이 그림은 오른쪽을 보므로 음수 각도) 덜덜 떤다
 		_head.rotation += deg_to_rad(-10.0) + sin(clock * 41.0) * deg_to_rad(2.5) - burst * deg_to_rad(6.0)
+	elif _head != null and sulking:
+		# 고개를 푹(양수 = 턱이 내려감) — 맞은 순간 더 숙였다가 조금 돌아온다. 가끔 훌쩍
+		var droop: float = clampf(sulk_t / 0.2, 0.0, 1.0)
+		var sniff: float = _pulse(fposmod(sulk_t - 0.5, 1.1), 0.05, 9.0) if sulk_t > 0.5 else 0.0
+		_head.rotation += deg_to_rad(9.0) * droop + deg_to_rad(10.0) * hit - deg_to_rad(3.0) * sniff
+		_head.position.y += 0.02 * _bounds.size.y * hit
 	queue_redraw()
 	_fx.queue_redraw()
 
@@ -201,7 +235,13 @@ func _face_point(px_on_face: Vector2, canvas: Node2D) -> Vector2:
 	return canvas.to_local(_head.to_global(local))
 
 func _paint_fx(canvas: Node2D) -> void:
-	if _cry_t < 0.0 or _head == null or _head.texture != cry_face:
+	if _head == null:
+		return
+	if _sulk_t >= 0.0:
+		_paint_tap(canvas)
+		_paint_gloom(canvas)
+		return
+	if _cry_t < 0.0 or _head.texture != cry_face:
 		return
 	_paint_wail_lines(canvas)
 	_paint_tears(canvas)
@@ -338,6 +378,52 @@ func _paint_text(canvas: Node2D) -> void:
 		if length > 1.0:
 			canvas.draw_polyline(pts, outline, fs * 0.17, true)
 			canvas.draw_polyline(pts, fill, fs * 0.07, true)
+
+## "툭" — 맞은 머리 꼭대기 위로 글자가 튀어 올랐다 사라지고, 맞은 자리에서 짧은 충격선이 퍼진다
+func _paint_tap(canvas: Node2D) -> void:
+	var top: Vector2 = _face_point(_head.texture.get_size() * Vector2(0.55, 0.1), canvas)
+	var outline := Color(0.06, 0.05, 0.08)
+	# 충격선 — 맞은 자리에서 위·옆으로 짧게(0.18초)
+	if _sulk_t < 0.18:
+		var k: float = _sulk_t / 0.18
+		for i in 5:
+			var ang: float = deg_to_rad(lerpf(-160.0, -20.0, i / 4.0))
+			var dir := Vector2(cos(ang), sin(ang))
+			var r0: float = _px * (0.06 + 0.1 * k)
+			var r1: float = r0 + _px * 0.08 * (1.0 - k)
+			canvas.draw_line(top + dir * r0, top + dir * r1, Color(outline, 1.0 - k), maxf(_px * 0.018, 1.5), true)
+	# 글자 — 톡 튀어 올랐다가 0.35초부터 흐려진다
+	if _sulk_t < 0.6:
+		var fs: float = _px * 0.32
+		var pop: float = _ease_out_back(clampf(_sulk_t / 0.14, 0.0, 1.0), 2.2)
+		var alpha: float = 1.0 - smoothstep(0.35, 0.6, _sulk_t)
+		var sc: float = fs / FONT_BASE * pop
+		# 머리 바로 위 — 옆으로 빼면 뒤에 선 엄마 얼굴을 덮었다(실측)
+		var pos: Vector2 = top + Vector2(_facing * _px * 0.05, -_px * (0.3 + 0.08 * _sulk_t))
+		canvas.draw_set_transform(pos, -0.15 * _facing, Vector2(sc, sc))
+		var gw: float = FONT.get_string_size(tap_text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_BASE).x
+		var at := Vector2(-gw * 0.5, FONT.get_ascent(FONT_BASE) * 0.38)
+		canvas.draw_string_outline(FONT, at, tap_text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_BASE, 22, Color(outline, alpha))
+		canvas.draw_string(FONT, at, tap_text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_BASE, Color(1.0, 0.95, 0.6, alpha))
+		canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+## 시무룩 — 머리 위에 늘어진 세로 우울 선 세 가닥(만화의 "시무룩" 표시). 맞고 0.25초 뒤에 스르륵 내려온다
+func _paint_gloom(canvas: Node2D) -> void:
+	var grow: float = smoothstep(0.25, 0.6, _sulk_t)
+	if grow <= 0.0:
+		return
+	var top: Vector2 = _face_point(_head.texture.get_size() * Vector2(0.55, 0.1), canvas)
+	var width: float = maxf(_px * 0.016, 1.2)
+	for i in 3:
+		var x: float = (i - 1) * _px * 0.075
+		var start: Vector2 = top + Vector2(x, -_px * 0.22)
+		var length: float = _px * (0.14 + 0.03 * (1 - absi(i - 1))) * grow
+		var pts := PackedVector2Array()
+		for j in 7:
+			var u: float = j / 6.0
+			pts.append(start + Vector2(sin(u * PI * 2.0 + _clock * 3.0 + i) * _px * 0.006, length * u))
+		canvas.draw_polyline(pts, Color(0.95, 0.95, 1.0, 0.7 * grow), width * 2.2, true)
+		canvas.draw_polyline(pts, Color(0.22, 0.2, 0.42, grow), width, true)
 
 ## 글자 자리 고르기 — 후보마다 글자 네모(꼬리 포함)가 피할 네모(남의 얼굴 + 아이 얼굴)와 겹치는 넓이,
 ## 화면 밖으로 나가는 넓이(3배 벌점)를 더해 가장 작은 곳. 0인 곳이 있으면 앞 순서(머리 위 뒤쪽)부터 고른다

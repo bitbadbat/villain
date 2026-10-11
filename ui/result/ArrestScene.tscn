@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://ui/result/ArrestScene.gd" id="1_scene"]
 [ext_resource type="Script" path="res://ui/result/ArrestBackdrop.gd" id="2_backdrop"]
@@ -8,6 +8,11 @@
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발2.png" id="6_flag2"]
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/경찰서_깃발3.png" id="7_flag3"]
 [ext_resource type="Shader" path="res://ui/story/FlagWave.gdshader" id="8_flagwave"]
+[ext_resource type="Script" path="res://ui/result/OnlookerCrowd.gd" id="9_onlookers"]
+[ext_resource type="Texture2D" uid="uid://r7iexqh2c1d8" path="res://sprite/result/구경꾼/아줌마.png" id="10_ajumma"]
+[ext_resource type="Texture2D" uid="uid://bsvfn3xjfdk27" path="res://sprite/result/구경꾼/학생.png" id="11_student"]
+[ext_resource type="Texture2D" uid="uid://k7jmfnjfxmik" path="res://sprite/result/구경꾼/할아버지.png" id="12_grandpa"]
+[ext_resource type="Texture2D" uid="uid://bau62kv5ijoj1" path="res://sprite/result/구경꾼/핸드폰_찍는_사람.png" id="13_filming"]
 
 [sub_resource type="Shader" id="Shader_edgefade"]
 code = "shader_type canvas_item;
@@ -66,6 +71,7 @@ shader_parameter/shade = 0.08
 process_mode = 3
 layer = 25
 script = ExtResource("1_scene")
+onlooker_textures = Array[Texture2D]([ExtResource("11_student"), ExtResource("10_ajumma"), ExtResource("12_grandpa"), ExtResource("13_filming"), null])
 
 [node name="Stage" type="Node2D" parent="."]
 
@@ -101,6 +107,7 @@ texture = ExtResource("7_flag3")
 centered = false
 
 [node name="Crowd" type="Node2D" parent="Stage"]
+script = ExtResource("9_onlookers")
 
 [node name="Procession" type="Node2D" parent="Stage"]
 

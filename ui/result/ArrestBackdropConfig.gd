@@ -24,3 +24,9 @@ extends Resource
 @export var show_flags: bool = false
 ## 그림 가장자리를 하늘로 살짝 녹일지(잘린 건물 그림용)
 @export var edge_fade: bool = true
+## 밤 장면인지 — 켜면 장면이 건물 뒤에 **어두운 밤하늘**(남색 그라데이션 + 별 + 달)을 그린다.
+## 그림에서 건물 사이사이를 투명하게 비워 두면 그 틈으로 밤하늘이 보여서 "밤"이라는 게 읽힌다(2026-10-11 번화가 — 감성 술집).
+## 인물·앞길은 안 어두워진다
+@export var night: bool = false
+## 밤일 때 달도 띄울지
+@export var night_moon: bool = true

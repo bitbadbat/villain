@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/result/MatchEnding.gd" id="1_main"]
 [ext_resource type="Script" path="res://ui/result/EndingBackdrop.gd" id="2_backdrop"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://ui/result/ResultTitle.gd" id="5_title"]
 [ext_resource type="Script" path="res://ui/result/RainField.gd" id="6_rain"]
 [ext_resource type="Script" path="res://ui/result/EndingWipe.gd" id="7_wipe"]
+[ext_resource type="Script" path="res://ui/result/EndingKid.gd" id="8_kid"]
 
 [node name="MatchEnding" type="CanvasLayer"]
 process_mode = 3
@@ -68,7 +69,13 @@ ribbon_ratio = 0.07
 fall_rate = 4.0
 max_pieces = 90
 
+[node name="Kid" type="Node2D" parent="Victory"]
+visible = false
+z_index = 6
+script = ExtResource("8_kid")
+
 [node name="Title" type="Control" parent="Victory"]
+z_index = 7
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -177,6 +184,7 @@ subtitle_size = 38
 
 [node name="Wipe" type="Control" parent="."]
 visible = false
+z_index = 20
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -187,6 +195,7 @@ mouse_filter = 2
 script = ExtResource("7_wipe")
 
 [node name="Fade" type="ColorRect" parent="."]
+z_index = 21
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

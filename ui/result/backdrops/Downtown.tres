@@ -12,3 +12,4 @@ door_height = 1.35
 horizon_px = -1.0
 show_flags = false
 edge_fade = true
+night = true

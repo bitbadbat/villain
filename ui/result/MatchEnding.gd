@@ -17,6 +17,10 @@ extends CanvasLayer
 signal finished
 
 const ResultSfx = preload("res://ui/result/ResultSfx.gd")
+const ResultFaces = preload("res://ui/result/ResultFaces.gd")
+## 인물이 커질 때 늘어난 키 가운데 **위로** 자라는 몫 — 나머지는 아래(화면 밖)로 자란다.
+## 머리 꼭대기가 화면 위로 안 잘리고(악플러 뾰족 머리가 0.3에선 뛸 때 위 끝에 닿았다), 글자와도 덜 겹친다
+const GROW_UP := 0.15
 
 enum Phase { IDLE, VICTORY, WIPE, DEFEAT, OUTRO, DONE }
 
@@ -30,6 +34,11 @@ enum Phase { IDLE, VICTORY, WIPE, DEFEAT, OUTRO, DONE }
 @export var end_fade_time: float = 0.22
 ## 끝나면 스스로 지운다
 @export var free_on_finish: bool = true
+
+@export_group("인물 크기")
+## 승리·패배 화면 인물 크기 배수(2026-10-11 팀: "캐릭터 몸 크기 좀 키워주라"). 아래 head_ratio들에 곱한다.
+## 1이면 예전 크기. 머리 가운데 x는 그대로, 커진 만큼은 대부분 아래로 자란다(`GROW_UP`)
+@export var character_scale: float = 1.12
 
 @export_group("승리 화면 인물")
 ## 머리 높이 / 화면 높이 — 머리가 화면 절반 넘게, 몸 아래는 화면 밖으로 잘린다
@@ -72,6 +81,8 @@ enum Phase { IDLE, VICTORY, WIPE, DEFEAT, OUTRO, DONE }
 @export var shiver_px: float = 3.0
 
 @export_group("글자")
+## 아이(층간소음 빌런)가 나오는 승리 화면에선 승리 글자를 이만큼(화면 높이 비율) 올린다 — 방방 뛰는 아이 머리와 이름표가 안 겹치게
+@export var kid_title_lift: float = 0.08
 ## 이름표 색 — P1 파랑 / P2 빨강(라운드 띠와 같은 색)
 @export var p1_color: Color = Color(0.17, 0.42, 0.92)
 @export var p2_color: Color = Color(0.9, 0.18, 0.22)
@@ -93,6 +104,8 @@ static var _preview_p1_wins: bool = true
 @onready var _v_mount: Node2D = $Victory/Holder/Puppet/Mount
 @onready var _v_marks: Node2D = $Victory/Hype
 @onready var _v_confetti_front: Control = $Victory/FrontConfetti
+## 층간소음 빌런이 이겼을 때 튀어 나오는 아이(EndingKid.gd) — 다른 캐릭터면 안 보인다
+@onready var _v_kid: Node2D = $Victory/Kid
 @onready var _v_title: Control = $Victory/Title
 @onready var _defeat: Control = $Defeat
 @onready var _d_backdrop: Control = $Defeat/Backdrop
@@ -119,6 +132,11 @@ var _preview_alone: bool = false
 ## head_rest_scale, left(화면 왼쪽인지), facing, base(Holder 제자리), radius(화면 px), hands({이름: 제자리})
 var _win: Dictionary = {}
 var _lose: Dictionary = {}
+## 승자·패자 캐릭터 이름(GameState.CHARACTERS 이름) — 승패 전용 표정(ResultFaces)을 찾을 때 쓴다
+var _win_name: String = ""
+var _lose_name: String = ""
+## 이번 승리 화면에 아이가 나오는지
+var _kid_on: bool = false
 var _snd_cheer: AudioStreamPlayer
 var _snd_applause: AudioStreamPlayer
 var _snd_rain: AudioStreamPlayer
@@ -148,7 +166,10 @@ func play(info: Dictionary) -> void:
 	_win["left"] = winner_p1
 	_lose = _make_side(_d_mount, str(info.get("loser_rig", "")), bool(info.get("loser_p2_color", false)))
 	_lose["left"] = not winner_p1
+	_win_name = str(info.get("winner_name", ""))
+	_lose_name = str(info.get("loser_name", ""))
 	_prepare_faces()
+	_prepare_kid(str(info.get("winner_rig", "")))
 	_v_title.set("subtitle", "P%d %s" % [1 if winner_p1 else 2, str(info.get("winner_name", ""))])
 	_v_title.set("tag_color", p1_color if winner_p1 else p2_color)
 	_d_title.set("subtitle", "P%d %s" % [2 if winner_p1 else 1, str(info.get("loser_name", ""))])
@@ -275,6 +296,10 @@ static func _transform_rect(xf: Transform2D, r: Rect2) -> Rect2:
 func _prepare_faces() -> void:
 	var win_rig := _win.get("rig") as BodyRig
 	if win_rig != null:
+		# 승리 전용 표정(일진 = 신남일진 등)이 있으면 그 얼굴을 액션 표정 칸에 꽂는다 — 없으면 원래 액션 표정
+		var win_face: Texture2D = ResultFaces.face(_win_name, "win")
+		if win_face != null:
+			_use_face(_win, win_face)
 		win_rig.set_action_face(true)
 		# 박수 자세가 있는 캐릭터(층간소음 빌런)는 주먹 대신 손뼉을 친다 — set_clapping이 액션 표정도 같이 켠다
 		if win_rig.clap_open_pose != null and win_rig.clap_close_pose != null:
@@ -283,12 +308,80 @@ func _prepare_faces() -> void:
 	var lose_rig := _lose.get("rig") as BodyRig
 	if lose_rig == null:
 		return
+	# 패배 전용 표정이 있으면 그것, 없으면 리그에 있는 얼굴 중에서 고른다
+	var lose_face: Texture2D = ResultFaces.face(_lose_name, "lose")
+	if lose_face != null:
+		_use_face(_lose, lose_face)
+		lose_rig.set_action_face(true)
+		return
 	var face: Array = _defeat_face(_lose)
 	if face.is_empty():
 		return
 	lose_rig.action_head_texture = face[0]
 	lose_rig.action_head_scale = face[1]
 	lose_rig.set_action_face(true)
+
+## 승패 전용 얼굴 그림을 액션 표정 칸에 꽂는다 — **평소 머리와 같은 화면 크기·자리**에 보이게 맞춘다.
+##  - 크기: 평소 머리와 캔버스가 같으면(같은 틀에 그린 표정) 평소 배율 그대로,
+##    다르면 살색 높이(헬스장 표정과 같은 방법 `BodyRig._skin_height_of`)로, 그것도 못 재면 보이는 영역 높이로 맞춘다
+##  - 자리: 그림 속 얼굴이 캔버스에서 치우친 정도가 달라도 **보이는 영역 가운데**가 평소 머리와 같은 데 오게
+##    머리 그림의 `offset`을 민다(BodyRig는 offset을 안 건드린다). 그 얼굴이 떠 있는 동안만 — `_hold_face_offset()`
+func _use_face(side: Dictionary, tex: Texture2D) -> void:
+	var rig := side.get("rig") as BodyRig
+	var head := side.get("head") as Sprite2D
+	if rig == null or head == null:
+		return
+	var rest_tex: Texture2D = rig._head_rest_texture if rig._head_rest_texture != null else head.texture
+	var rest_scale: Vector2 = side.get("head_rest_scale", Vector2.ONE)
+	var face_scale: Vector2 = rest_scale
+	if rest_tex != null and not tex.get_size().is_equal_approx(rest_tex.get_size()):
+		var here: float = BodyRig._skin_height_of(tex)
+		var rest: float = BodyRig._skin_height_of(rest_tex)
+		var k: float = rig._opaque_rect_of(rest_tex).size.y / maxf(rig._opaque_rect_of(tex).size.y, 1.0)
+		if here > 1.0 and rest > 1.0:
+			k = rest / here
+		face_scale = rest_scale * k
+	rig.action_head_texture = tex
+	rig.action_head_scale = face_scale
+	side["face_tex"] = tex
+	side["face_base_offset"] = head.offset
+	if rest_tex == null:
+		side["face_offset"] = head.offset
+		return
+	# 머리 그림 좌표(배율 전)에서 보이는 영역 가운데 — 평소 머리 가운데에 새 얼굴 가운데를 맞춘다
+	var rest_c: Vector2 = _opaque_center(rig, rest_tex, head) * rest_scale
+	var face_c: Vector2 = _opaque_center(rig, tex, head) * face_scale
+	# 평소 머리의 offset도 평소 배율로 잰다 — 배율이 다른 얼굴에 offset을 그대로 더하면 offset x (배율 차)만큼 어긋난다
+	side["face_offset"] = (head.offset * rest_scale + rest_c - face_c) / face_scale
+
+## 그림의 보이는 영역 가운데 — 머리 스프라이트 기준(배율·offset 전, 그 스프라이트의 좌우 뒤집힘 반영)
+func _opaque_center(rig: BodyRig, tex: Texture2D, sprite: Sprite2D) -> Vector2:
+	var size: Vector2 = tex.get_size()
+	var px: Rect2 = rig._opaque_rect_of(tex)
+	if sprite.flip_h:
+		px.position.x = size.x - px.end.x
+	if sprite.flip_v:
+		px.position.y = size.y - px.end.y
+	return px.get_center() - (size * 0.5 if sprite.centered else Vector2.ZERO)
+
+## 승패 전용 얼굴이 떠 있는 동안만 그 얼굴의 offset을 쓴다(잠깐 아픈 얼굴 등으로 바뀌면 원래 offset)
+func _hold_face_offset(side: Dictionary) -> void:
+	if not side.has("face_tex"):
+		return
+	var head := side.get("head") as Sprite2D
+	if head == null:
+		return
+	head.offset = side["face_offset"] if head.texture == side["face_tex"] else side["face_base_offset"]
+
+## 승자가 아이 딸린 캐릭터(층간소음 빌런)면 아이를 준비한다 — 엄마 품의 작은 아이(Carry)는 숨긴다(아이가 둘로 보이면 안 된다)
+func _prepare_kid(winner_rig_path: String) -> void:
+	_kid_on = _v_kid != null and _win.get("rig") != null and bool(_v_kid.call("wants", _win_name, winner_rig_path))
+	if not _kid_on:
+		return
+	var win_rig := _win["rig"] as BodyRig
+	win_rig.carrying = false
+	var left: bool = bool(_win.get("left", true))
+	_v_kid.call("setup", left, 1.0 if left else -1.0)
 
 ## 패배 얼굴 고르기 — [그림, 배율] 또는 빈 배열(평소 얼굴 유지).
 ##  1) **올라잇**(`curl_face_rise`): 이를 악물고 식은땀 흘리는 찡그림 — 레퍼런스 패배(이 악문 지하철 아저씨)와 제일 가깝다.
@@ -317,9 +410,18 @@ func _layout() -> void:
 	_frame_side(_win, _v_puppet, _v_mount, victory_head_ratio, victory_head_top, victory_head_x)
 	_frame_side(_lose, _d_puppet, _d_mount, defeat_head_ratio, defeat_head_top, defeat_head_x)
 	var win_left: bool = bool(_win.get("left", true))
-	_v_backdrop.set("focus", Vector2(_side_x(win_left, victory_head_x), _vis.position.y + _vis.size.y * (victory_head_top + victory_head_ratio * 0.5)))
-	_v_title.set("anchor", Vector2(_side_x(not win_left, 0.3), _vis.position.y + _vis.size.y * 0.4))
+	var v_head: Vector2 = _scaled_head(victory_head_ratio, victory_head_top)
+	_v_backdrop.set("focus", Vector2(_side_x(win_left, victory_head_x), _vis.position.y + _vis.size.y * (v_head.y + v_head.x * 0.5)))
+	if _kid_on:
+		_v_kid.call("layout", _vis, (_win["base"] as Vector2).x, float(_win.get("radius", -1.0)))
+	var title_y: float = 0.4 - (kid_title_lift if _kid_on else 0.0)
+	_v_title.set("anchor", Vector2(_side_x(not win_left, 0.3), _vis.position.y + _vis.size.y * title_y))
 	_d_title.set("anchor", Vector2(_side_x(win_left, 0.27), _vis.position.y + _vis.size.y * 0.36))
+
+## character_scale을 먹인 (머리 높이 비율, 머리 꼭대기 비율) — 커진 만큼의 GROW_UP 몫만 위로 올라간다
+func _scaled_head(head_ratio: float, head_top: float) -> Vector2:
+	var grow: float = head_ratio * (character_scale - 1.0)
+	return Vector2(head_ratio + grow, head_top - grow * GROW_UP)
 
 ## 자기 쪽 화면 끝에서 from_edge(화면 폭 비율)만큼 들어온 x
 func _side_x(left: bool, from_edge: float) -> float:
@@ -327,9 +429,12 @@ func _side_x(left: bool, from_edge: float) -> float:
 
 ## 머리 높이가 화면의 head_ratio가 되게 키우고, 머리 가운데를 정한 자리에 놓는다.
 ## Holder 원점 = 머리 바로 아래 화면 맨 밑 — 눌렸다 늘어날 때 발밑(화면 밖)이 아니라 화면 끝을 축으로 삼는다
-func _frame_side(side: Dictionary, puppet: Node2D, mount: Node2D, head_ratio: float, head_top: float, head_x: float) -> void:
+func _frame_side(side: Dictionary, puppet: Node2D, mount: Node2D, base_ratio: float, base_top: float, head_x: float) -> void:
 	if side.get("rig") == null:
 		return
+	var scaled: Vector2 = _scaled_head(base_ratio, base_top)
+	var head_ratio: float = scaled.x
+	var head_top: float = scaled.y
 	var rect: Rect2 = side["head_rect"]
 	var fit: float = head_ratio * _vis.size.y / maxf(rect.size.y, 1.0)
 	var left: bool = bool(side.get("left", true))
@@ -373,6 +478,9 @@ func _tick_victory(dt: float) -> void:
 	if _win.get("rig") == null:
 		return
 	var t: float = _t if _phase == Phase.VICTORY else victory_time + _t
+	_hold_face_offset(_win)
+	if _kid_on:
+		_v_kid.call("tick", dt, t)
 	var facing: float = _win["facing"]
 	# 아래 구석에서 빙그르 튀어 올라와 살짝 넘쳤다 자리 잡는다
 	var e: float = _ease_out_back(clampf(t / maxf(victory_enter_time, 0.01), 0.0, 1.0), 1.6)
@@ -454,6 +562,7 @@ func _tick_defeat(dt: float) -> void:
 		_impact()
 	if _lose.get("rig") == null:
 		return
+	_hold_face_offset(_lose)
 	var facing: float = _lose["facing"]
 	# 위에서 털썩 — 떨어지는 동안 길쭉했다가 닿는 순간 찌그러지고 출렁이며 돌아온다
 	var drop_u: float = clampf(t / maxf(defeat_drop_time, 0.01), 0.0, 1.0)

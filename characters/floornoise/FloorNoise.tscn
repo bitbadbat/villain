@@ -94,6 +94,6 @@ kid_scene = ExtResource("23_kid")
 script = ExtResource("24_domain")
 cooldown = 45.0
 start_on_cooldown = true
-skill_name = "영역전개 — 윗집"
+skill_name = "층간소음 체험"
 demo_video = ExtResource("vid_ult")
 description = "두 사람을 위아래 두 층짜리 집으로 끌고 간다. 위층은 층간소음 모자, 아래층은 상대. 걷고 뛰고 아이를 풀어놓는 것이 전부 아래층으로 내려꽂는 충격파가 된다."

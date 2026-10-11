@@ -38,6 +38,10 @@
 [ext_resource type="PackedScene" path="res://characters/akpeulleo/gym/AkpeulleoRocketSquatDownPose.tscn" id="gym_squat_down_pose_gear"]
 [ext_resource type="Texture2D" uid="uid://t1mmn721tvd0" path="res://sprite/악플러/몸/악플러 머리 뒷 모습.png" id="back_head"]
 [ext_resource type="Texture2D" uid="uid://cmejilbhglbt" path="res://sprite/악플러/몸/악플러 몸 뒷 모습.png" id="back_body"]
+[ext_resource type="Texture2D" uid="uid://bjldfnt0oy5iy" path="res://sprite/악플러/몸/몸/악플러 몸 측면 2.png" id="p2_side2"]
+[ext_resource type="Texture2D" uid="uid://cs0oaym0i6yt" path="res://sprite/악플러/몸/몸/악플러 몸 측면 3.png" id="p2_side3"]
+[ext_resource type="Texture2D" uid="uid://d0vllvr6jbjb6" path="res://sprite/악플러/몸/몸/악플러 몸 뒷 모습.png" id="p2_back"]
+[ext_resource type="Texture2D" uid="uid://doa52y554elar" path="res://sprite/악플러/몸/몸/악플러발 P2.png" id="p2_foot"]
 
 [node name="BodyRig" unique_id=638085793 instance=ExtResource("1_rig")]
 curl_down_pose_gear = ExtResource("gym_curl_down_pose_gear")
@@ -88,6 +92,9 @@ squat_face_move = ExtResource("70_curl_rise")
 squat_face_rest = ExtResource("71_curl_fall")
 run_face = ExtResource("71_curl_fall")
 p2_body_texture = ExtResource("60_p2body")
+p2_body_turn_textures = Array[Texture2D]([ExtResource("p2_side2"), ExtResource("p2_side3")])
+p2_body_back_texture = ExtResource("p2_back")
+p2_foot_texture = ExtResource("p2_foot")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

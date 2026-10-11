@@ -51,6 +51,12 @@
 [ext_resource type="Texture2D" path="res://sprite/지하철빌런/입벌린지하철.png" id="gym_face_fall"]
 [ext_resource type="Texture2D" uid="uid://ddb63greuxaqw" path="res://sprite/지하철빌런/지하철아저씨 뒷부분.png" id="back_head"]
 [ext_resource type="Texture2D" uid="uid://cu048ojcq6lm3" path="res://sprite/지하철빌런/지하철등뒤-Photoroom.png" id="back_body"]
+[ext_resource type="Texture2D" uid="uid://lebk2h4348c3" path="res://sprite/지하철빌런/지하철빌런 몸 측면 2 .png" id="side2"]
+[ext_resource type="Texture2D" uid="uid://cmdl3ys5kmdf2" path="res://sprite/지하철빌런/지하철빌런 몸 측면3 .png" id="side3"]
+[ext_resource type="Texture2D" uid="uid://cxitidy2ewrrc" path="res://sprite/지하철빌런/P2/지하철빌런 몸 측면 2 P2.png" id="p2_side2"]
+[ext_resource type="Texture2D" uid="uid://ck0cr3lyphcxd" path="res://sprite/지하철빌런/P2/지하철빌런 몸 측면3 P2.png" id="p2_side3"]
+[ext_resource type="Texture2D" uid="uid://bug0sxbr5g3ws" path="res://sprite/지하철빌런/P2/지하철 아저씨 뒷부분 P2.png" id="p2_back"]
+[ext_resource type="Texture2D" uid="uid://xug0bei4fyjl" path="res://sprite/지하철빌런/P2/발 P2.png" id="p2_foot"]
 
 [node name="BodyRig" unique_id=1130472803 instance=ExtResource("1_rig")]
 curl_face_rise = ExtResource("gym_face_rise")
@@ -116,6 +122,10 @@ dual_hit3_ready_pose = ExtResource("33r")
 dual_hit3_mid_pose = ExtResource("33m")
 dual_hit3_end_pose = ExtResource("33e")
 p2_body_texture = ExtResource("60_p2body")
+body_turn_textures = Array[Texture2D]([ExtResource("side2"), ExtResource("side3")])
+p2_body_turn_textures = Array[Texture2D]([ExtResource("p2_side2"), ExtResource("p2_side3")])
+p2_body_back_texture = ExtResource("p2_back")
+p2_foot_texture = ExtResource("p2_foot")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

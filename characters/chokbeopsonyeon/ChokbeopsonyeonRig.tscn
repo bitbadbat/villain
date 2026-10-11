@@ -31,6 +31,10 @@
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/올라잇촉법소년.png" id="gym_face_rise"]
 [ext_resource type="Texture2D" path="res://sprite/금쪽이/힘든 축법소년.png" id="gym_face_fall"]
 [ext_resource type="Texture2D" uid="uid://cuqvy6amqf0cu" path="res://sprite/금쪽이/축법소년 몸 뒷모습.png" id="back_body"]
+[ext_resource type="Texture2D" uid="uid://c2kqajtgycb6" path="res://sprite/금쪽이/P2/금쪽이 몸 측면 2 P2.png" id="p2_side2"]
+[ext_resource type="Texture2D" uid="uid://fe7d0xv2y202" path="res://sprite/금쪽이/P2/금쪾이 몸 측면3 P2.png" id="p2_side3"]
+[ext_resource type="Texture2D" uid="uid://c863nmdlce2uk" path="res://sprite/금쪽이/P2/축법소년 몸 뒷모습 P2.png" id="p2_back"]
+[ext_resource type="Texture2D" uid="uid://xad721boek3h" path="res://sprite/금쪽이/P2/축법소년 발 P2.png" id="p2_foot"]
 
 [node name="BodyRig" unique_id=2055399099 instance=ExtResource("1_rig")]
 curl_bar_in_front = true
@@ -73,6 +77,9 @@ head_back_anchor = Vector3(625, 747, 863)
 body_turn_textures = Array[Texture2D]([ExtResource("92_body_turn1"), ExtResource("91_body_turn2")])
 gun_hides_held_item = true
 p2_body_texture = ExtResource("60_p2body")
+p2_body_turn_textures = Array[Texture2D]([ExtResource("p2_side2"), ExtResource("p2_side3")])
+p2_body_back_texture = ExtResource("p2_back")
+p2_foot_texture = ExtResource("p2_foot")
 ride_lift = 7.0
 
 [node name="Bike" type="Sprite2D" parent="." index="0" unique_id=647671740]

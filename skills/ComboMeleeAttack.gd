@@ -764,8 +764,7 @@ func _resolve(hit: bool) -> void:
 	hitbox.set_deferred("monitoring", false)
 	hitbox.set_deferred("monitorable", false)
 	if hit:
-		# 맞히면 공중 휘두르기도 다시 채운다 — 같은 점프 안에서 또 쓸 수 있다(땅 평타의 쿨 초기화와 같은 규칙)
-		_air_used = false
+		# 공중 휘두르기는 맞혀도 다시 안 채운다 — **점프 한 번에 한 번**(2026-10-11 사용자). 땅에 닿아야 다시 쓴다
 		_building_hits = 0
 		# 경관봉 2타(올려치기)가 맞으면 상대가 떠 있다 — 바로 난무 받는 시간으로 넘어간다
 		if _armed_mode() and _swing_step == ARMED_LIFT_STEP:
@@ -839,7 +838,8 @@ func _fire(fighter: Fighter, step: int) -> void:
 	var d: AttackData = _hit_data(step)
 	var visual := fighter.get_node_or_null("Visual")
 	if visual and _air_now and visual.has_method("play_air_swing"):
-		visual.play_air_swing(air_swing_duration)
+		# 무기 끝이 판정(앞쪽 반원) 밖으로 안 나가게 — 판정보다 멀리 그려지면 허공을 치는 것처럼 보였다(2026-10-11 QA)
+		visual.play_air_swing(air_swing_duration, air_swing_center, air_swing_radius)
 		if visual.has_method("play_swing_trail"):
 			visual.play_swing_trail()
 	elif visual and final_air_motion and _is_final(step) and d == null and visual.has_method("play_air_swing"):
@@ -847,7 +847,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		var fin_len: float = _final_swing_duration(step, visual)
 		if fin_len <= 0.0:
 			fin_len = float(visual.get("attack_duration"))
-		visual.play_air_swing(fin_len)
+		visual.play_air_swing(fin_len, Vector2.ZERO, range + _hit_half_width())
 		if visual.has_method("play_swing_trail"):
 			visual.play_swing_trail()
 	elif visual and visual.has_method("play_attack_swing"):
@@ -1335,6 +1335,19 @@ func _slice_projectiles_in_range() -> void:
 		var rel: Vector2 = p.global_position - center
 		if rel.length() <= spin_flurry_radius and rel.x * _fighter.facing >= 0.0:
 			p.slice_in_half()
+
+## 이단 점프를 하면 공중 휘두르기를 한 번 더 쓸 수 있게 채운다(Fighter.jump가 부른다). 휘두르는 중이면 그 휘두르기가 끝난 뒤부터
+func refill_air_swing() -> void:
+	_air_used = false
+
+## 땅 위 판정 모양의 앞쪽 반폭(px) — 마무리를 공중 휘두르기 모션으로 칠 때 무기 끝을 판정 끝(range + 이 값)까지만 보내려고
+func _hit_half_width() -> float:
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node and shape_node.shape is RectangleShape2D:
+		return (shape_node.shape as RectangleShape2D).size.x * 0.5 * absf(shape_node.scale.x)
+	if shape_node and shape_node.shape is CircleShape2D:
+		return (shape_node.shape as CircleShape2D).radius * absf(shape_node.scale.x)
+	return 15.0
 
 ## 공중 큰 휘두르기 판정 — 원래 판정 모양을 맡아 두고 바라보는 쪽 반원(air_swing_radius)을 끼운다.
 ## 회전 난무와 같은 반원 모양이지만 반지름이 따로다

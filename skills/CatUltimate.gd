@@ -20,7 +20,7 @@ const KIND_WHITE := 2
 const MODIFIER_ID := "cat_suit"
 
 @export_group("검은 고양이 (똥 유탄)")
-## 검은 고양이 궁 컷인(만화 세 칸). 주황·흰은 아직 없어서 이름만 뜨는 임시 화면이 나온다
+## 검은 고양이 궁 컷인(만화 세 칸). 주황·흰은 이 씬을 상속해 고양이 그림만 바꾼 씬(아래 각 그룹)
 @export var black_cutin_scene: PackedScene = preload("res://ui/cutin/CatMomBlackCutIn.tscn")
 @export var black_shots: int = 5
 ## 발사 간격(초) — 기본공격 쿨로 쓴다
@@ -39,6 +39,8 @@ const MODIFIER_ID := "cat_suit"
 @export var held_cat_offset: Vector2 = Vector2(12.0, 4.0)
 
 @export_group("주황 고양이 (고양이 옷)")
+## 주황 고양이 궁 컷인 — 검은 컷인 씬을 상속해 고양이 그림만 주황으로 바꾼 것
+@export var orange_cutin_scene: PackedScene = preload("res://ui/cutin/CatMomOrangeCutIn.tscn")
 ## 기본공격 피해 배수
 @export var orange_damage_mult: float = 1.5
 ## 받는 피해 배수(0.9 = 10% 덜 받음)
@@ -73,6 +75,8 @@ const MODIFIER_ID := "cat_suit"
 @export var suit_foot_texture: Texture2D = preload("res://sprite/고양이 아줌마/고양이 아줌마 합체/고양이 아줌맘 합체 발.png")
 
 @export_group("흰 고양이 (회복)")
+## 흰 고양이 궁 컷인 — 검은 컷인 씬을 상속해 고양이 그림만 흰색으로 바꾼 것
+@export var white_cutin_scene: PackedScene = preload("res://ui/cutin/CatMomWhiteCutIn.tscn")
 ## 쓰는 순간 최대 체력의 이만큼을 회복한다
 @export_range(0.0, 1.0, 0.05) var white_heal_ratio: float = 0.3
 
@@ -105,9 +109,12 @@ func _kind_of(fighter: Fighter) -> int:
 
 ## 궁 컷인 장면 — 고른 고양이에 따라 갈린다(UltimateCutIn이 부른다). null이면 스탯의 기본값(없으면 임시 화면)
 func cutin_scene_for(fighter: Fighter) -> PackedScene:
-	if _kind_of(fighter) == KIND_BLACK:
-		return black_cutin_scene
-	return null
+	match _kind_of(fighter):
+		KIND_ORANGE:
+			return orange_cutin_scene
+		KIND_WHITE:
+			return white_cutin_scene
+	return black_cutin_scene
 
 func _execute(fighter: Fighter) -> void:
 	_fighter = fighter

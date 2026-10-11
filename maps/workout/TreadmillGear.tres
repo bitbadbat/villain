@@ -9,6 +9,10 @@
 [ext_resource type="Texture2D" uid="uid://clrdfph8wchic" path="res://sprite/고양이 아줌마/런닝머신10스택.png" id="7_cat"]
 [ext_resource type="Texture2D" uid="uid://b764mhntg2br4" path="res://sprite/지하철빌런/런닝머신10스택.png" id="8_subway"]
 [ext_resource type="Texture2D" uid="uid://dfiq3jtd36h1" path="res://sprite/일진/런닝머신10스택.png" id="9_iljin"]
+[ext_resource type="Texture2D" uid="uid://c1diclcolbwvc" path="res://sprite/고양이 아줌마/P2/런닝머신10스택 P2.png" id="p2_cat"]
+[ext_resource type="Texture2D" uid="uid://cnpgxxop1ykwx" path="res://sprite/금쪽이/P2/런닝머신10스택 P2.png" id="p2_kid"]
+[ext_resource type="Texture2D" uid="uid://bluddw8uouwr7" path="res://sprite/악플러/몸/몸/런닝머신10스택 P2.png" id="p2_akp"]
+[ext_resource type="Texture2D" uid="uid://cw1ui8alryg3s" path="res://sprite/지하철빌런/P2/런닝머신10스택 P2.png" id="p2_subway"]
 
 [resource]
 script = ExtResource("1_data")
@@ -21,6 +25,12 @@ rocket_shoes = {
 "일진": ExtResource("9_iljin"),
 "주정뱅이": ExtResource("6_drunk"),
 "지하철 아저씨": ExtResource("8_subway")
+}
+rocket_shoes_p2 = {
+"고양이 아주머니": ExtResource("p2_cat"),
+"금쪽이": ExtResource("p2_kid"),
+"악플러": ExtResource("p2_akp"),
+"지하철 아저씨": ExtResource("p2_subway")
 }
 entries = {
 "고양이 아주머니|bike": {

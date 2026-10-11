@@ -319,7 +319,7 @@ func _physics_process(delta: float) -> void:
 			_follow_vertically(vertical)
 	elif not is_on_floor() and _dash_left <= 0.0:
 		# 낮은 장애물만 폴짝 넘는다 — 맵 벽처럼 높은 벽 앞에서 콩콩대며 넘어가려 들지 않게. 이미 뛰었으면 안 뛴다
-		if not _jumped and kind != Kind.ORANGE and want_x != 0.0 and is_on_wall() and velocity.y >= 0.0 and _can_hop_over():
+		if not _jumped and kind == Kind.BLACK and want_x != 0.0 and is_on_wall() and velocity.y >= 0.0 and _can_hop_over():
 			velocity.y = -hop_speed
 			_jumped = true
 	move_and_slide()
@@ -480,14 +480,15 @@ func _vertical_target() -> Fighter:
 			return owner_fighter if _has_owner and is_instance_valid(owner_fighter) else null
 	return null
 
-## 상대가 위면 뛰어오르고, 아래면 밟고 선 원웨이 발판을 잠깐 통과해 내려온다.
+## 상대가 위면 뛰어오르고(흰은 안 뜀), 아래면 밟고 선 원웨이 발판을 잠깐 통과해 내려온다.
 ## 높이는 발끼리 비교한다(캐릭터 원점은 몸 가운데라 발 = +30)
 func _follow_vertically(target: Fighter) -> void:
 	if _jump_cd > 0.0:
 		return
 	var dx: float = target.global_position.x - global_position.x
 	var dy: float = target.global_position.y + 30.0 - global_position.y
-	if dy < -jump_trigger_height and absf(dx) < jump_reach_x:
+	# 흰 고양이는 점프를 안 한다(2026-10-11 사용자) — 주인이 위에 있으면 밑에서 기다리고, 내려가기만 한다
+	if dy < -jump_trigger_height and absf(dx) < jump_reach_x and kind != Kind.WHITE:
 		velocity.y = Fighter.jump_velocity
 		_jumped = true
 		_jump_cd = jump_cooldown

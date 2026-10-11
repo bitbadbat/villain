@@ -322,7 +322,8 @@ func _apply_treadmill_gear(stack: int) -> void:
 	if stage == visual.treadmill_gear_stage():
 		return
 	var who: String = _fighter.stats.character_name if _fighter.stats else ""
-	var texture: Texture2D = data.gear_texture(who, stage)
+	var p2: bool = visual.has_method("is_player_two") and visual.is_player_two()
+	var texture: Texture2D = data.gear_texture(who, stage, p2)
 	var entry: Dictionary = data.entry(who, stage)
 	if entry.is_empty() and stage != "":
 		entry = data.default_entry(visual.stage_rest_info(), texture, stage)

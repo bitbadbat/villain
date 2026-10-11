@@ -1505,6 +1505,21 @@ func _ready() -> void:
 	if _eat_bowl:
 		_eat_bowl_rest_scale = _eat_bowl.scale
 		_eat_bowl.visible = false
+	if _fighter != null and swing_trail and weapon_smear:
+		_prewarm_smear.call_deferred()
+
+## 스미어 색·보이는 영역을 **라운드 시작 때 미리** 계산해 둔다(2026-10-10 렉 실측: 캐릭터마다 첫 휘두르기에
+## 그림을 통째로 읽느라 25~42ms 멈췄다). 결과는 그림별 static 캐시라 둘째 판부터는 바로 넘어간다
+func _prewarm_smear() -> void:
+	var parts: Array = [_hand_l, _hand_r, _foot_r]
+	if _hand_r_hold:
+		parts.append_array(_hand_r_hold.get_children())
+	for part in parts:
+		var sprite := part as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		var tip: Vector2 = _far_corner_from_grip(sprite) if sprite.get_parent() == _hand_r_hold else _far_corner_from_rig(sprite)
+		_weapon_smear_colors(sprite, _far_corner_from(sprite, tip), tip)
 
 ## 헬스장 단계만큼 손·발 그림을 키운다(기획서 "강화된 부위가 변해 한눈에 보임") — `set_limb_stage()`가 값을 넣는다.
 ## **원래 크기에 곱한다** — 캐릭터마다 손·발 그림 크기가 달라서 절대값으로 쓰면 다 어긋난다.
@@ -1862,6 +1877,7 @@ func _apply_pose(speed_ratio: float) -> void:
 		_attack_pose_on = _pose_attack_scenes()
 		if not _attack_pose_on:
 			_pose_attack_hand()
+			_keep_air_swing_in_reach()
 	# 맨손 잽이면 반대 손을 얼굴 앞에 올린다 — 한 손은 막고 한 손은 뻗는 권투 자세.
 	# 지금 자세(걷기·잽) 위에 블렌드만큼 섞어서, 타가 바뀌거나 끝날 때 손이 미끄러지듯 오간다
 	if not _attack_pose_on:
@@ -2214,15 +2230,19 @@ func _gather_turn_limbs(p: float) -> void:
 	var th: float = _turn_angle(p)
 	var c: float = cos(th)
 	var sn: float = sin(th)
-	var parts := [[_hand_l, -air_swing_orbit_hand_side, 1.0], [_foot_l, -air_swing_orbit_foot_side, 1.0],
-		[_foot_r, air_swing_orbit_foot_side, 1.0],
-		[_hand_r, air_swing_orbit_hand_side, air_swing_weapon_gather], [_hand_r_hold, air_swing_orbit_hand_side, air_swing_weapon_gather]]
+	# 팽이처럼 — 도는 동안 손발이 몸에서 멀어졌다가 끝에 제자리로 돌아온다
+	var bump: float = sin(PI * clampf(p, 0.0, 1.0))
+	var hand_grow: float = 1.0 + air_swing_orbit_hand_grow * bump
+	var foot_grow: float = 1.0 + air_swing_orbit_grow * bump
+	var parts := [[_hand_l, -air_swing_orbit_hand_side, 1.0, hand_grow], [_foot_l, -air_swing_orbit_foot_side, 1.0, foot_grow],
+		[_foot_r, air_swing_orbit_foot_side, 1.0, foot_grow],
+		[_hand_r, air_swing_orbit_hand_side, air_swing_weapon_gather, hand_grow], [_hand_r_hold, air_swing_orbit_hand_side, air_swing_weapon_gather, hand_grow]]
 	for e in parts:
 		var part: Node2D = e[0]
 		if part == null:
 			continue
 		var x: float = part.position.x
-		part.position.x = lerpf(x, x * c - float(e[1]) * sn, float(e[2]))
+		part.position.x = lerpf(x, (x * c - float(e[1]) * sn) * float(e[3]), float(e[2]))
 
 func _apply_turn_no_flip(p: float) -> void:
 	var front: int = _turn_textures().size()
@@ -2406,7 +2426,7 @@ const AIR_SWING_VARIANT := SLASH_VARIANT_BASE + 1000
 @export var air_swing_raise_off: Vector2 = Vector2(-6, 30)
 @export var air_swing_slam_off: Vector2 = Vector2(14, -84)
 ## 손이 지나는 길이 부푸는 정도(px). **아래→위로 올려치는 길에선 양수가 앞쪽**(위→아래면 반대) — 클수록 반원이 둥글다
-@export var air_swing_arc: float = 54.0
+@export var air_swing_arc: float = 110.0
 ## 올려칠 때 상체가 넘어가는 각도(도). 음수 = 뒤로 젖힌다(승룡권처럼 위로 솟는 느낌)
 @export var air_swing_lean_deg: float = -14.0
 ## 휘두르는 동안 몸이 한 바퀴 도는지(회전 타격 `spin_end`·`spin_back_flip`을 그대로 쓴다)
@@ -2415,17 +2435,79 @@ const AIR_SWING_VARIANT := SLASH_VARIANT_BASE + 1000
 ## (2026-10-10 사용자: "뒤집지 말고 측면 사진으로 자연스럽게"). 뒷모습 그림이 오면 진짜 한 바퀴로 바꿀 자리
 @export var air_swing_spin_flip: bool = false
 ## 돌며 팔다리가 몸 둘레를 돌 때 **무기 든 손**은 이 비율만큼만 돈다(0 = 안 돎, 1 = 다른 팔다리와 같이). 휘두르기가 몸 뒤로 숨지 않게
-@export_range(0.0, 1.0, 0.05) var air_swing_weapon_gather: float = 0.3
+## (2026-10-11: 1로 올렸다가 트레일이 몸 뒤로 그려져서 0으로 — 무기 손은 앞쪽 올려치기만 하고 안 돈다)
+@export_range(0.0, 1.0, 0.05) var air_swing_weapon_gather: float = 0.0
 ## 돌 때 손·발이 몸 옆으로 벌어지는 폭(px, 리그 좌표) — 정면을 볼 때 손이 몸 양옆 이만큼에 온다
-@export var air_swing_orbit_hand_side: float = 18.0
-@export var air_swing_orbit_foot_side: float = 8.0
+## (2026-10-11 사용자: "주먹이랑 발이 팽이처럼 한 바퀴" — 18/8에서 키웠다)
+@export var air_swing_orbit_hand_side: float = 12.0
+@export var air_swing_orbit_foot_side: float = 12.0
+## 도는 한가운데서 발이 몸에서 더 멀어지는 비율(0 = 그대로, 0.6 = 1.6배) — 처음·끝은 제자리라 이어짐이 안 끊긴다
+@export var air_swing_orbit_grow: float = 0.3
+## 손만 따로. 2026-10-11 사용자가 두 번 줄임("팔 간격 절반" -> "다리랑 팔 더 줄여"): 손 옆 폭 34 -> 21 -> 12, 멀어짐 0.6 -> 0.3 -> 0.15 / 발 옆 폭 22 -> 12, 멀어짐 0.6 -> 0.3
+@export var air_swing_orbit_hand_grow: float = 0.15
 ## 반대 손(왼손)이 올려칠 때 가는 자리(제자리 기준, +x = 앞)와 각도(도) — 감을 땐 이 반대쪽으로 반쯤 나간다
 @export var air_swing_off_hand: Vector2 = Vector2(-14, 14)
 @export var air_swing_off_hand_deg: float = 40.0
 @export_group("")
 
-func play_air_swing(duration: float) -> void:
+## 공중 휘두르기 무기 끝이 못 넘어가는 원(리그 좌표). 반지름이 0 이하면 안 막는다
+var _air_reach_center: Vector2 = Vector2.ZERO
+var _air_reach_radius: float = -1.0
+
+## reach_center·reach_radius = 판정 반원(캐릭터 기준 px, +x = 바라보는 쪽). 주면 **무기 끝(맨손이면 주먹 끝)이
+## 그 원 밖으로 안 나가게** 손을 안쪽으로 당긴다 — 트레일이 판정보다 멀리 그려지면 허공을 치는 것처럼 보였다
+## (2026-10-11 사용자 QA: 다섯 캐릭터 모두 판정 밖으로 46~64px 나갔다)
+func play_air_swing(duration: float, reach_center: Vector2 = Vector2.ZERO, reach_radius: float = -1.0) -> void:
 	play_attack_swing(AIR_SWING_VARIANT, duration, air_swing_spin)
+	_air_reach_radius = -1.0
+	if reach_radius > 0.0:
+		# 캐릭터 좌표 -> 리그 좌표(리그는 바라보는 쪽이 늘 +x, 좌우는 scale.x 부호로만 뒤집힌다)
+		var face: float = signf(scale.x) if scale.x != 0.0 else 1.0
+		_air_reach_center = transform.affine_inverse() * Vector2(reach_center.x * face, reach_center.y)
+		_air_reach_radius = reach_radius / maxf(absf(scale.y), 0.001)
+
+## 공중 휘두르기 중 무기 끝이 판정 반원 밖이면 손을 그만큼 안으로 당긴다(모양은 그대로, 넘친 만큼만)
+func _keep_air_swing_in_reach() -> void:
+	if _attack_variant != AIR_SWING_VARIANT or _air_reach_radius <= 0.0:
+		return
+	var hand: Sprite2D = _attack_hand()
+	if hand == null:
+		return
+	# 무기(맨손이면 주먹) 그림의 네 모서리가 전부 판정 반원 안에 들게 한다
+	var item: Sprite2D = _held_weapon_sprite() if hand == _hand_r else null
+	var part: Sprite2D = item if item else hand
+	var rect: Rect2 = part.get_rect()
+	var corners: Array[Vector2] = []
+	for c in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
+		corners.append((item.transform * c).rotated(hand.rotation) if item else (c * hand.scale).rotated(hand.rotation))
+	# 원 밖 — 가운데에서 가장 먼 모서리만큼 안으로
+	var far: float = 0.0
+	var far_dir := Vector2.ZERO
+	for v in corners:
+		var off: Vector2 = hand.position + v - _air_reach_center
+		if off.length() - _air_reach_radius > far:
+			far = off.length() - _air_reach_radius
+			far_dir = off.normalized()
+	hand.position -= far_dir * far
+	# 반원이라 뒤쪽(원 가운데보다 뒤)도 판정 밖 — 가장 뒤에 있는 모서리만큼 앞으로
+	var back: float = 0.0
+	for v in corners:
+		back = maxf(back, _air_reach_center.x - (hand.position.x + v.x))
+	hand.position.x += back
+
+## 오른손에 든 그림 중 가장 큰 것(무기 본체). 없거나 안 보이면 null
+func _held_weapon_sprite() -> Sprite2D:
+	if _hand_r_hold == null or not _hand_r_hold.visible:
+		return null
+	var item: Sprite2D = null
+	var best: float = 0.0
+	for child in _hand_r_hold.get_children():
+		if child is Sprite2D and child.visible and child.texture:
+			var area: float = child.get_rect().get_area() * absf(child.scale.x * child.scale.y)
+			if area > best:
+				best = area
+				item = child
+	return item
 
 ## 지금 베기의 값 — 공중 큰 휘두르기면 위 export, 아니면 SLASHES 표
 func _slash_entry() -> Dictionary:
@@ -6855,6 +6937,10 @@ func _sync_foot_marks() -> void:
 ## 2P가 쓸 **몸통 돌리기** 그림들 — 비워 두면 머리를 돌리는 동안만 원래 색이 보인다.
 ## `body_turn_textures`와 장수를 맞춰 넣을 것
 @export var p2_body_turn_textures: Array[Texture2D] = []
+## 2P가 쓸 **몸 뒷모습**(점프 공격으로 돌 때) — 비워 두면 평소 뒷모습
+@export var p2_body_back_texture: Texture2D
+## 2P가 쓸 **발** 그림(두 발 같이) — 비워 두면 평소 발
+@export var p2_foot_texture: Texture2D
 
 ## 지금 2P 색인지
 var _is_player_two: bool = false
@@ -6864,7 +6950,19 @@ var _is_player_two: bool = false
 ## 안 그러면 한 걸음 걷는 순간 원래 색으로 되돌아간다
 func set_player_two(on: bool) -> void:
 	_is_player_two = on
-	if not on or p2_body_texture == null:
+	if not on:
+		return
+	# 발·뒷모습은 몸통 색 그림이 없어도 따로 갈아입는다
+	if p2_body_back_texture != null:
+		body_back_texture = p2_body_back_texture
+	elif p2_body_texture != null:
+		# 몸통만 2P 색이고 뒷모습 2P가 없으면 1P 색 등이 튀어나오지 않게 뒷모습 몸통을 끈다
+		body_back_texture = null
+	if p2_foot_texture != null:
+		for foot in [_foot_l, _foot_r]:
+			if foot:
+				foot.texture = p2_foot_texture
+	if p2_body_texture == null:
 		return
 	_body_rest_texture = p2_body_texture
 	if _body:

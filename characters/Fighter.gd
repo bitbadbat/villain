@@ -1380,6 +1380,9 @@ func jump() -> void:
 	elif _air_jumps_left > 0:
 		_air_jumps_left -= 1
 		velocity.y = air_jump_velocity * jump_multiplier
+		# 공중 휘두르기는 **점프 한 번에 한 번** — 이단 점프도 점프라 한 번 더 쓸 수 있다(2026-10-11 사용자)
+		if basic_attack and basic_attack.has_method("refill_air_swing"):
+			basic_attack.refill_air_swing()
 	else:
 		return
 	# 발밑 바람 줄기(_spawn_jump_wind)는 2026-10-06 사용자 요청으로 뺐다 — 하얀 스피드 라인으로 대신한다

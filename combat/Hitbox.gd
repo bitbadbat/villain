@@ -61,6 +61,9 @@ const _SFX := preload("res://combat/Sfx.gd")
 const _GUARD_IMPACT := preload("res://combat/GuardImpact.gd")
 ## 카운터 히트 연출(멈춤·배경 흐림·"COUNTER" 글자). 씬에 하나만 두고 이름으로 찾아 쓴다
 const _COUNTER_HIT_FX := preload("res://combat/CounterHitFx.gd")
+## 맞을 때마다 띄우는 장면은 미리 붙들어 둔다 — load()로 그때그때 읽으면 아무도 안 쥐고 있을 때 디스크에서 다시 읽어 프레임이 튄다(2026-10-10 렉 실측)
+const _DAMAGE_POPUP_SCENE := preload("res://combat/DamagePopup.tscn")
+const _HIT_SPARK_SCENE := preload("res://combat/HitSpark.tscn")
 
 ## 이 히트박스를 만든 캐릭터. 자기 자신의 Hurtbox는 맞아도 무시된다.
 ## 맵 기믹(지나가는 열차 등)처럼 주인이 없는 히트박스는 null로 둔다
@@ -281,7 +284,7 @@ func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return
-	var popup: Node2D = load("res://combat/DamagePopup.tscn").instantiate()
+	var popup: Node2D = _DAMAGE_POPUP_SCENE.instantiate()
 	scene_root.add_child(popup)
 	popup.global_position = pos
 	popup.setup(dmg, combo)
@@ -342,7 +345,7 @@ func _spawn_spark(pos: Vector2, launch_dir: Vector2 = Vector2.ZERO, blocked: boo
 	if blunt_impact:
 		spark = BluntImpact.new()
 	else:
-		spark = load("res://combat/HitSpark.tscn").instantiate()
+		spark = _HIT_SPARK_SCENE.instantiate()
 	scene_root.add_child(spark)
 	spark.global_position = pos
 	# 맞은 방향으로 찢어지고, 데미지가 클수록 크게 튄다(데미지 7 = 세기 1)

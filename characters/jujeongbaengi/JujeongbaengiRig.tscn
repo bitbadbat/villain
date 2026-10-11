@@ -33,6 +33,9 @@
 [ext_resource type="PackedScene" path="res://characters/jujeongbaengi/gym/JujeongbaengiRunRightPose.tscn" id="gym_run_right_pose"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/올라잇주정뱅이.png" id="gym_face_rise"]
 [ext_resource type="Texture2D" path="res://sprite/주정뱅이/몸/주정뱅이 힘듬.png" id="gym_face_fall"]
+[ext_resource type="Texture2D" uid="uid://08iws0vy8hcc" path="res://sprite/주정뱅이/몸/P2/주정뱅이 몸 측면 2 P2.png" id="p2_side2"]
+[ext_resource type="Texture2D" uid="uid://yv44j6ijn07o" path="res://sprite/주정뱅이/몸/P2/주정뱅이 몸 측면 3 P2.png" id="p2_side3"]
+[ext_resource type="Texture2D" uid="uid://dx0a1mshwpn86" path="res://sprite/주정뱅이/몸/P2/주정뱅이 몸 뒷모습 P2.png" id="p2_back"]
 
 [node name="BodyRig" unique_id=2039840783 instance=ExtResource("1_rig")]
 weapon_smear = true
@@ -71,6 +74,8 @@ drunk_head_texture = ExtResource("7_drunk")
 drunk_head_scale = Vector2(0.0513, 0.0578)
 idle_special = 2
 p2_body_texture = ExtResource("60_p2body")
+p2_body_turn_textures = Array[Texture2D]([ExtResource("p2_side2"), ExtResource("p2_side3")])
+p2_body_back_texture = ExtResource("p2_back")
 
 [node name="FootL" parent="." index="0" unique_id=1982953737]
 texture = ExtResource("4_foot")

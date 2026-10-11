@@ -56,3 +56,26 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var vignette: float = 0.0
 ## 윤곽광 두께(화면 px)
 @export_range(0.5, 8.0, 0.1) var rim_px: float = 2.2
+
+@export_group("햇빛·그늘(낮 그림)")
+## 건물 그림에 곱할 색 — 그림 맨 위 / 땅선. 위는 해를 받아 따뜻하게, 아래는 그늘로 푸르고 어둡게. 흰색이면 그대로
+@export var facade_top: Color = Color(1, 1, 1)
+@export var facade_bottom: Color = Color(1, 1, 1)
+## 해 반대쪽(rim_dir 반대) 끝을 이만큼 어둡게 — 0이면 안 함
+@export_range(0.0, 0.6, 0.01) var facade_side: float = 0.0
+## 건물·나무 그늘이 앞길에 드리운 색(곱하기, 흰색이면 안 그림)과 깊이(월드, 캐릭터 키 = 1)
+@export var ground_shade: Color = Color(1, 1, 1)
+@export var ground_shade_depth: float = 1.0
+## 햇살 색(알파 = 세기) — 빛줄기·땅의 햇빛 얼룩이 이 색
+@export var sun_color: Color = Color(1.0, 0.88, 0.6, 0.0)
+## 빛줄기(나무 틈으로 새는 햇살) — 그림 px (x, y, 폭). rim_dir 반대 방향(해에서 멀어지는 쪽)으로 뻗어 땅에 닿는다
+@export var sun_shafts: Array[Vector3] = []
+## 나뭇잎 사이 햇빛 얼룩 — 건물 앞 그늘 띠 안에 일렁이는 밝은 점(인물엔 안 얹는다 — 얼굴에 얼룩처럼 보였다). 0이면 안 함
+@export_range(0.0, 1.0, 0.01) var dapple: float = 0.0
+## 유리에 스치는 반짝임 — 그림 px 네모(유리창·유리문)와 한 번 스치는 간격(초)
+@export var glint_rects: Array[Rect2] = []
+@export var glint_period: float = 2.8
+## light_rects를 그림 위에서도 빛나게(낮 그림용 — 밤 그림은 불이 구워져 있어 0)
+@export_range(0.0, 1.0, 0.01) var light_glow: float = 0.0
+## 모니터·TV처럼 깜빡이는 불 — light_rects 번호
+@export var light_flicker: PackedInt32Array = PackedInt32Array()

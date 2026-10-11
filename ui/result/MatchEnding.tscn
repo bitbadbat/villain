@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://ui/result/MatchEnding.gd" id="1_main"]
 [ext_resource type="Script" path="res://ui/result/EndingBackdrop.gd" id="2_backdrop"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://ui/result/RainField.gd" id="6_rain"]
 [ext_resource type="Script" path="res://ui/result/EndingWipe.gd" id="7_wipe"]
 [ext_resource type="Script" path="res://ui/result/EndingKid.gd" id="8_kid"]
+[ext_resource type="Script" path="res://ui/result/ArrestKid.gd" id="9_crykid"]
 
 [node name="MatchEnding" type="CanvasLayer"]
 process_mode = 3
@@ -126,6 +127,11 @@ streak_count = 46
 [node name="Puppet" type="Node2D" parent="Defeat/Holder"]
 
 [node name="Mount" type="Node2D" parent="Defeat/Holder/Puppet"]
+
+[node name="Kid" type="Node2D" parent="Defeat"]
+visible = false
+z_index = 4
+script = ExtResource("9_crykid")
 
 [node name="Gloom" type="Node2D" parent="Defeat"]
 script = ExtResource("4_marks")

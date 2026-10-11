@@ -196,6 +196,8 @@ var _siren_clock: float = 0.0
 var _kids: Array = []
 ## 조명(ArrestLighting) — 건물 위·사람 밑 빛 층 / 사람 위 번짐 층 / 인물 조각이 같이 쓰는 윤곽광 재질(ArrestLight.gdshader)
 var _ground_light: Node2D = null
+## 낮 그림 명암(곱하기) — 건물 바로 위, GroundLight 밑
+var _shade_light: Node2D = null
 var _air_light: Node2D = null
 var _vignette: Node2D = null
 var _light_mat: ShaderMaterial = null
@@ -940,6 +942,13 @@ func _build_lighting() -> void:
 	_ground_light.name = "GroundLight"
 	_stage.add_child(_ground_light)
 	_stage.move_child(_ground_light, _building.get_index() + 1)
+	# 그늘을 먼저 곱하고 그 위에 빛을 더한다 — 건물 바로 다음(GroundLight 앞)
+	_shade_light = Node2D.new()
+	_shade_light.set_script(LightingScript)
+	_shade_light.name = "ShadeLight"
+	_shade_light.set("mode", 3)
+	_stage.add_child(_shade_light)
+	_stage.move_child(_shade_light, _building.get_index() + 1)
 	_air_light = Node2D.new()
 	_air_light.set_script(LightingScript)
 	_air_light.name = "AirLight"
@@ -956,7 +965,7 @@ func _build_lighting() -> void:
 
 ## 맵 설정(ArrestBackdropConfig 조명 묶음)을 빛 층·사람 층·윤곽광에 넣는다
 func _apply_lighting(config: Resource) -> void:
-	for light in [_ground_light, _air_light, _vignette]:
+	for light in [_ground_light, _shade_light, _air_light, _vignette]:
 		light.call("configure", config)
 	# 밤이면 사람·차·구경꾼을 어둡게 — 윤곽광은 셰이더가 그 위에 더해서 어둠 속에서도 빛난다
 	var ambient: Color = config.get("ambient")
@@ -972,7 +981,6 @@ func _apply_lighting(config: Resource) -> void:
 	_light_mat.set_shader_parameter("rim_px", float(config.get("rim_px")))
 	_light_mat.set_shader_parameter("shade_strength", float(config.get("shade_strength")))
 	_light_mat.set_shader_parameter("gradient_strength", float(config.get("gradient_strength")))
-
 ## 인물 그림 조각(Sprite2D)에 윤곽광 재질을 붙인다 — 스크립트가 달린 표시와 이미 다른 재질이 있는 조각은 건드리지 않는다
 ## (게임의 `BodyRig.set_rim_light()`와 같은 규칙)
 func _light_parts(node: Node) -> void:
@@ -988,7 +996,8 @@ func _update_lighting() -> void:
 	var state: Dictionary = _car.call("light_state")
 	var rect: Rect2 = get_viewport().get_visible_rect()
 	var view := Rect2(rect.position - _stage.position, rect.size)
-	for light in [_ground_light, _air_light, _vignette]:
+	for light in [_ground_light, _shade_light, _air_light, _vignette]:
+		light.set("building_width", _building.region_rect.size.x)
 		light.set("vanish_x", vanish_x)
 		light.set("horizon_y", horizon_y)
 		light.set("camera_height", camera_height)

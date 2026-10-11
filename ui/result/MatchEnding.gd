@@ -18,6 +18,7 @@ signal finished
 
 const ResultSfx = preload("res://ui/result/ResultSfx.gd")
 const ResultFaces = preload("res://ui/result/ResultFaces.gd")
+const EndingKid = preload("res://ui/result/EndingKid.gd")
 ## 인물이 커질 때 늘어난 키 가운데 **위로** 자라는 몫 — 나머지는 아래(화면 밖)로 자란다.
 ## 머리 꼭대기가 화면 위로 안 잘리고(악플러 뾰족 머리가 0.3에선 뛸 때 위 끝에 닿았다), 글자와도 덜 겹친다
 const GROW_UP := 0.15
@@ -80,6 +81,13 @@ enum Phase { IDLE, VICTORY, WIPE, DEFEAT, OUTRO, DONE }
 ## 부들부들 떠는 폭(px)
 @export var shiver_px: float = 3.0
 
+@export_group("패배 화면 아이")
+## 층간소음 빌런이 지면 옆에서 우는 아이(연행 장면의 ArrestKid와 같은 것) — 키 / 화면 높이, 엄마 쪽 화면 끝에서 잰 가운데 x / 화면 폭,
+## 발 딛는 땅 = 화면 맨 밑 + 화면 높이 x 이 값(승리 화면 아이 EndingKid와 같은 값)
+@export var defeat_kid_height: float = 0.38
+@export var defeat_kid_x: float = 0.64
+@export var defeat_kid_ground: float = 0.06
+
 @export_group("글자")
 ## 아이(층간소음 빌런)가 나오는 승리 화면에선 승리 글자를 이만큼(화면 높이 비율) 올린다 — 방방 뛰는 아이 머리와 이름표가 안 겹치게
 @export var kid_title_lift: float = 0.08
@@ -110,6 +118,8 @@ static var _preview_p1_wins: bool = true
 @onready var _defeat: Control = $Defeat
 @onready var _d_backdrop: Control = $Defeat/Backdrop
 @onready var _d_rain_back: Control = $Defeat/BackRain
+## 층간소음 빌런이 졌을 때 옆에서 우는 아이(ArrestKid.gd) — 다른 캐릭터면 안 보인다
+@onready var _d_kid: Node2D = $Defeat/Kid
 @onready var _d_holder: Node2D = $Defeat/Holder
 @onready var _d_puppet: Node2D = $Defeat/Holder/Puppet
 @onready var _d_mount: Node2D = $Defeat/Holder/Puppet/Mount
@@ -137,6 +147,10 @@ var _win_name: String = ""
 var _lose_name: String = ""
 ## 이번 승리 화면에 아이가 나오는지
 var _kid_on: bool = false
+## 이번 패배 화면에 우는 아이가 나오는지 / 아이 발밑 제자리(화면 px) / 아이 키(화면 px)
+var _d_kid_on: bool = false
+var _d_kid_base: Vector2 = Vector2.ZERO
+var _d_kid_px: float = 0.0
 var _snd_cheer: AudioStreamPlayer
 var _snd_applause: AudioStreamPlayer
 var _snd_rain: AudioStreamPlayer
@@ -169,7 +183,7 @@ func play(info: Dictionary) -> void:
 	_win_name = str(info.get("winner_name", ""))
 	_lose_name = str(info.get("loser_name", ""))
 	_prepare_faces()
-	_prepare_kid(str(info.get("winner_rig", "")))
+	_prepare_kid(str(info.get("winner_rig", "")), str(info.get("loser_rig", "")))
 	_v_title.set("subtitle", "P%d %s" % [1 if winner_p1 else 2, str(info.get("winner_name", ""))])
 	_v_title.set("tag_color", p1_color if winner_p1 else p2_color)
 	_d_title.set("subtitle", "P%d %s" % [2 if winner_p1 else 1, str(info.get("loser_name", ""))])
@@ -373,15 +387,21 @@ func _hold_face_offset(side: Dictionary) -> void:
 		return
 	head.offset = side["face_offset"] if head.texture == side["face_tex"] else side["face_base_offset"]
 
-## 승자가 아이 딸린 캐릭터(층간소음 빌런)면 아이를 준비한다 — 엄마 품의 작은 아이(Carry)는 숨긴다(아이가 둘로 보이면 안 된다)
-func _prepare_kid(winner_rig_path: String) -> void:
+## 승자·패자가 아이 딸린 캐릭터(층간소음 빌런)면 아이를 준비한다 — 승리 화면은 튀어 나와 방방(EndingKid),
+## 패배 화면은 옆에서 엉엉(ArrestKid — 바로 뒤 연행 장면의 우는 아이와 같은 것). 엄마 품의 작은 아이(Carry)는 숨긴다(아이가 둘로 보이면 안 된다)
+func _prepare_kid(winner_rig_path: String, loser_rig_path: String) -> void:
 	_kid_on = _v_kid != null and _win.get("rig") != null and bool(_v_kid.call("wants", _win_name, winner_rig_path))
-	if not _kid_on:
-		return
-	var win_rig := _win["rig"] as BodyRig
-	win_rig.carrying = false
-	var left: bool = bool(_win.get("left", true))
-	_v_kid.call("setup", left, 1.0 if left else -1.0)
+	if _kid_on:
+		(_win["rig"] as BodyRig).carrying = false
+		var left: bool = bool(_win.get("left", true))
+		_v_kid.call("setup", left, 1.0 if left else -1.0)
+	_d_kid_on = _d_kid != null and _lose.get("rig") != null and bool(_v_kid.call("wants", _lose_name, loser_rig_path))
+	_d_kid.visible = _d_kid_on
+	if _d_kid_on:
+		(_lose["rig"] as BodyRig).carrying = false
+		_d_kid.call("set_bounds", EndingKid._measure(_d_kid.call("kid_root")))
+		# 아이 그림만 엄마처럼 차갑게 — 눈물·"뿌에엥" 글자(Fx)는 밝게 둔다
+		(_d_kid.get_node("Puppet") as CanvasItem).modulate = defeat_tint
 
 ## 패배 얼굴 고르기 — [그림, 배율] 또는 빈 배열(평소 얼굴 유지).
 ##  1) **올라잇**(`curl_face_rise`): 이를 악물고 식은땀 흘리는 찡그림 — 레퍼런스 패배(이 악문 지하철 아저씨)와 제일 가깝다.
@@ -414,6 +434,16 @@ func _layout() -> void:
 	_v_backdrop.set("focus", Vector2(_side_x(win_left, victory_head_x), _vis.position.y + _vis.size.y * (v_head.y + v_head.x * 0.5)))
 	if _kid_on:
 		_v_kid.call("layout", _vis, (_win["base"] as Vector2).x, float(_win.get("radius", -1.0)))
+	if _d_kid_on:
+		# 엄마 쪽 끝에서 defeat_kid_x만큼 — 좁은 화면에서 엄마 머리에 올라타지 않게 머리 밖으로 밀어낸다(EndingKid.layout과 같은 방법)
+		var lose_left: bool = bool(_lose.get("left", true))
+		var bounds: Rect2 = _d_kid.get("_bounds")
+		_d_kid_px = defeat_kid_height * _vis.size.y
+		var clear: float = float(_lose.get("radius", 0.0)) + bounds.size.x / maxf(bounds.size.y, 1.0) * _d_kid_px * 0.3
+		var mom_x: float = (_lose["base"] as Vector2).x
+		var kx: float = _side_x(lose_left, defeat_kid_x)
+		kx = maxf(kx, mom_x + clear) if lose_left else minf(kx, mom_x - clear)
+		_d_kid_base = Vector2(kx, _vis.end.y + _vis.size.y * defeat_kid_ground)
 	var title_y: float = 0.4 - (kid_title_lift if _kid_on else 0.0)
 	_v_title.set("anchor", Vector2(_side_x(not win_left, 0.3), _vis.position.y + _vis.size.y * title_y))
 	_d_title.set("anchor", Vector2(_side_x(win_left, 0.27), _vis.position.y + _vis.size.y * 0.36))
@@ -599,6 +629,22 @@ func _tick_defeat(dt: float) -> void:
 	_d_holder.rotation = facing * deg_to_rad(defeat_lean_deg) * _ease_out_cubic(clampf(settle / 1.0, 0.0, 1.0))
 	_slump(_lose, _ease_out_cubic(clampf(settle / 0.7, 0.0, 1.0)), breath)
 	_feed_marks(_d_marks, _lose, clampf((tl - 0.25) / 0.5, 0.0, 1.0))
+	if _d_kid_on:
+		_tick_defeat_kid(fall_y, tl, facing)
+
+## 우는 아이 한 프레임 — 엄마와 같이 털썩 떨어지고, 닿는 순간 "팍" 울음이 터진다(떨어지는 동안은 우는 얼굴만)
+func _tick_defeat_kid(fall_y: float, tl: float, facing: float) -> void:
+	_d_kid.position = _d_kid_base + Vector2(0.0, fall_y)
+	# "뿌에엥" 글자가 엄마 얼굴·화면 밖으로 안 가게 — 엄마 머리 네모와 보이는 화면을 아이 좌표로 넘긴다
+	var to_kid: Transform2D = _d_kid.get_global_transform().affine_inverse()
+	var rig := _lose["rig"] as Node2D
+	var avoid: Array = [_transform_rect(to_kid * rig.get_global_transform(), _lose["head_rect"])]
+	# 글자 자리는 처음 울 때(아직 떨어지는 중) 한 번 정해진다 — 엄마는 같이 떨어지니 지금 자리로, 가만있는 화면·제목은
+	# **내려앉을 자리** 기준으로 넘겨야 머리 위 자리가 화면 밖으로 잡히지 않는다
+	# shortcut: "패배..." + 이름표 네모를 기준 해상도 px로 어림(실측 anchor 기준 -190~+180 / -80~+150). 글자 크기를 바꾸면 다시 잴 것
+	avoid.append(Rect2((_d_title.get("anchor") as Vector2) + Vector2(-200.0, -90.0) - _d_kid_base, Vector2(400.0, 250.0)))
+	_d_kid.call("set_layout_hints", avoid, Rect2(_vis.position - _d_kid_base, _vis.size))
+	_d_kid.call("tick", _d_kid_px, Vector2.ZERO, facing, maxf(tl, 0.0), _clock, false, 0.0)
 
 ## 털썩 내려앉는 순간 — 잠깐 아픈 얼굴(없는 캐릭터는 그냥 넘어간다) + 야유
 ## (슬픈 트롬본은 2026-10-08 사용자 요청으로 뺐다)

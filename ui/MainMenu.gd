@@ -463,7 +463,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if debug_episode_keys and event is InputEventKey:
 		var jump: InputEventKey = event
 		if jump.pressed and not jump.echo:
-			for pair in [[KEY_1, "ep1"], [KEY_2, "ep2"]]:
+			for pair in [[KEY_1, "ep1"], [KEY_2, "ep2"], [KEY_3, "ep3"]]:
 				if jump.keycode == pair[0] or jump.physical_keycode == pair[0]:
 					# ⚠️ **먼저 입력을 먹었다고 표시한다** — `start_story()`가 씬을 갈아 치우면
 					# 이 메뉴가 사라져서 `get_viewport()`가 null이 된다

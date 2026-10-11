@@ -126,7 +126,7 @@ const DEX_MAPS := {
 const STORY_EPISODES := [
 	{"id": "ep1", "name": "EP.1-첫 임무", "scene": "res://ui/story/StoryScene1.tscn"},
 	{"id": "ep2", "name": "EP.2-악플러", "scene": "res://ui/story/StoryScene13.tscn"},
-	{"id": "ep3", "name": "에피소드 3", "scene": ""},
+	{"id": "ep3", "name": "EP.3-지하철 아저씨", "scene": "res://ui/story/StoryScene23.tscn"},
 	{"id": "ep4", "name": "에피소드 4", "scene": ""},
 	{"id": "ep5", "name": "에피소드 5", "scene": ""},
 	{"id": "ep6", "name": "에피소드 6", "scene": ""},

@@ -12,6 +12,10 @@
 [ext_resource type="Texture2D" path="res://sprite/악플러/스킬로고/악플러1번스킬.png" id="10"]
 [ext_resource type="Texture2D" path="res://sprite/악플러/스킬로고/악플러2번스킬.png" id="11"]
 [ext_resource type="Texture2D" path="res://sprite/악플러/스킬로고/악플러궁극기.png" id="12"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/키보드워리어.ogv" id="vid_atk"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/유선마우스그랩.ogv" id="vid_grab"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/열등감느끼기.ogv" id="vid_rage"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/실시간급상승.ogv" id="vid_ult"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -42,6 +46,9 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
+skill_name = "키보드 워리어"
+description = "키보드를 휘둘러 3연타. 마지막 타에 멀리 날린다. 헛치면 1초 쉬어야 한다."
+demo_video = ExtResource("vid_atk")
 windup = 0.096
 swing_duration = 0.24
 finisher_windup = 0.223
@@ -68,16 +75,25 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("6")
+skill_name = "유선 마우스 그랩"
+description = "유선 마우스를 던져 맞은 상대를 끌어당긴다. 빗나가면 그냥 사라진다."
+demo_video = ExtResource("vid_grab")
 cooldown = 8.0
 icon = ExtResource("10")
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("7")
+skill_name = "열등감 느끼기"
+description = "잠시 분노해 기본공격 한 타마다 피해가 늘어난다. 도는 동안 얼굴이 붉어진다."
+demo_video = ExtResource("vid_rage")
 cooldown = 10.0
 icon = ExtResource("11")
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("8")
+skill_name = "실시간 급상승"
+description = "상대를 실검에 올려 나락을 보낸다. 10초간 상대의 발이 크게 느려진다."
+demo_video = ExtResource("vid_ult")
 cooldown = 25.0
 start_on_cooldown = true
 icon = ExtResource("12")

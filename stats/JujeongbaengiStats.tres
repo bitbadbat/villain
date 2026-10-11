@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://cyost0r03b8qy" path="res://ui/cutin/JujeongbaengiCutIn.tscn" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/도감/전신/주정뱅이.png" id="9_ingame"]
 
 [resource]
 script = ExtResource("1")
@@ -11,3 +12,4 @@ ultimate_cutin_scene = ExtResource("2")
 attack_rating = 4
 hp_rating = 2
 description = "마실수록 강해지는 근접 딜러. 술을 마셔 스택을 쌓고, 쌓인 만큼 토하기 사거리가 길어진다. 궁극기는 앞으로 퍼지는 부채꼴 괴성."
+dex_ingame_texture = ExtResource("9_ingame")

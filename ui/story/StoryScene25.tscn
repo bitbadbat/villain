@@ -1,0 +1,53 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/storymode/지하철빌런/아저씨를발견한경찰.png" id="2_up"]
+[ext_resource type="Script" path="res://ui/story/SlowPan.gd" id="9_pan"]
+
+[node name="StoryScene25" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.35
+hold_time = 1.3
+next_scene = "res://ui/story/StoryScene26.tscn"
+out_transition = 1
+crossfade_time = 0.35
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Officer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_pan")
+texture = ExtResource("2_up")
+from_bottom = false
+pan_time = 0.0
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

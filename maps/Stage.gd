@@ -484,6 +484,12 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 			_pause_button_node = null
 			await _go_story_next_black()
 			return
+		# **마지막 판에도 띠가 먼저 지나간다**(2026-10-11 사용자: "2번째 판 이겼을 때도
+		# P1 혹은 P2 승리 나온 다음에 승패 연출 나오도록"). 전에는 끝나는 판만 띠를 건너뛰어서
+		# 누가 이겨 판이 끝났는지 알려 주는 띠 없이 곧장 연출로 넘어갔다
+		await _play_round_banner(p1_won, is_draw)
+		if not is_inside_tree():
+			return
 		# 대전(컴퓨터 상대 포함)은 결과창 전에 승리 → 패배 → 연행 연출을 보여주고, 결과창은 연행 장면 위 아래쪽에 띄운다
 		var cinematic: bool = _wants_match_ending()
 		if cinematic:

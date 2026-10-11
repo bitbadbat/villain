@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" path="res://sprite/맵/헬스장/올라잇.png" id="4_1axom"]
 [ext_resource type="Script" path="res://combat/GymBarbell.gd" id="5_aegt1"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="6_7v03b"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="7_6bc2d"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음새로운버전.png" id="7_6bc2d"]
 
 [node name="GymCurlMidPose" type="Node2D" unique_id=744874838]
 scale = Vector2(8, 8)

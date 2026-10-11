@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://6shjavroe8hu" path="res://sprite/층간소음/층간소음발.png" id="1_foot"]
 [ext_resource type="Texture2D" uid="uid://c67skkj6ibwg4" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="2_body"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
-[ext_resource type="Texture2D" uid="uid://bybf0rgbb7ohp" path="res://sprite/층간소음/웃는모습.png" id="4_head"]
+[ext_resource type="Texture2D" uid="uid://scw273jw1o8y" path="res://sprite/층간소음/층간소음새로운버전미소.png" id="4_head"]
 
 [node name="FloorNoiseClapOpenPose" type="Node2D" unique_id=190687728]
 scale = Vector2(8, 8)

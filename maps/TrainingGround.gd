@@ -19,6 +19,8 @@ const GRID_HALF_WIDTH: float = 1000.0
 ## 이 아래로 떨어지면 바닥 밖으로 나간 것으로 보고 다시 세운다
 const FALL_LIMIT_Y: float = 900.0
 
+## 처음(캐릭터·더미를 세운 직후)에 맵에 있던 자식들. "되돌리기"가 치울 것을 가리는 기준이다
+var _original_children: Array[Node] = []
 var _fighter: Fighter
 ## 스킬 데미지·넉백을 확인할 고정 타겟(샌드백) — 가만히 서서 맞아주기만 한다
 var _dummy: Fighter
@@ -61,6 +63,9 @@ func _ready() -> void:
 	_build_ui()
 	_spawn_character(GameState.p1_character_path)
 	_spawn_dummy()
+	# **여기까지가 "원래 있던 것"이다.** 이 뒤에 맵에 붙는 건 전부 캐릭터가 깔아 놓은 것
+	# (고양이 집·고양이·개찰구·투사체…)이라, 되돌리기 때 치울 대상이 된다
+	_original_children = get_children()
 
 func _process(delta: float) -> void:
 	if not (_fighter and is_instance_valid(_fighter)):
@@ -381,7 +386,19 @@ func _on_lookback_pressed() -> void:
 func _on_blink_pressed() -> void:
 	_play_motion("play_blink")
 
+## **캐릭터가 맵에 깔아 놓은 것을 전부 치운다** — 고양이 집, 돌아다니는 고양이, 개찰구,
+## 날아가다 멈춘 투사체 같은 것들(2026-10-11 사용자: 훈련장에서 집을 설치하면 없앨 수가 없다).
+##
+## 이름이나 종류로 하나씩 가리지 않고 **처음에 있던 자식 목록과 견주는** 방식이라,
+## 새 캐릭터가 무엇을 깔든 따로 손볼 필요가 없다
+func _clear_spawned() -> void:
+	for child in get_children():
+		if child in _original_children:
+			continue
+		child.queue_free()
+
 func _on_reset_pressed() -> void:
+	_clear_spawned()
 	Fighter.gravity = Fighter.DEFAULT_GRAVITY
 	Fighter.jump_velocity = Fighter.DEFAULT_JUMP_VELOCITY
 	_speed_scale = 1.0

@@ -44,6 +44,13 @@ extends Node2D
 		preview_closed = v
 		queue_redraw()
 
+## **눈 감은 그림을 따로 두고 싶을 때** 넣는다 (2026-10-11 사용자: 코드로 그린 눈꺼풀이 "어색").
+## 넣으면 타원을 안 그리고 머리 그림 자체를 이 그림으로 갈아끼운다 — 눈매·속눈썹까지 그린 대로 나온다.
+## **머리와 같은 캔버스로 그린 그림**이어야 자리가 안 틀어진다
+@export var closed_texture: Texture2D = null
+## 얼마나 감겼을 때 그림을 바꿀지(0 뜸 ~ 1 감음). 그림 교체는 중간 단계가 없어서 이 값에서 톡 하고 바뀐다
+@export_range(0.1, 0.9, 0.05) var closed_swap_at: float = 0.45
+
 ## true인 동안 눈을 감고 그대로 있는다(close_time만큼 감기고, false가 되면 open_time만큼 뜬다) — 고양이 피격
 var held_closed: bool = false
 ## false면 리그(BodyRig) 머리가 아니어도 동작한다 — 코드로 조립한 고양이 머리 등
@@ -53,6 +60,8 @@ var _base_texture: Texture2D
 var _wait: float = 0.0
 var _t: float = -1.0
 var _amount: float = 0.0
+## 지금 머리 그림을 눈 감은 그림으로 바꿔 놨는지 — 바꿔 놓은 동안은 "표정이 바뀌었다"고 보지 않는다
+var _swapped: bool = false
 var _color: Color
 
 func _ready() -> void:
@@ -91,8 +100,11 @@ func _process(delta: float) -> void:
 	# 대시 잔상처럼 리그를 복제해 스크립트를 떼어낸 사본에서는 깜빡이지 않는다
 	var rig := head.get_parent() if head else null
 	var alive: bool = rig != null and (rig.has_method("play_attack_swing") or not needs_rig)
-	if not alive or head.texture != _base_texture:
+	# 내가 갈아끼운 눈 감은 그림은 "표정이 바뀐 것"이 아니다 — 그걸 못 가리면 감자마자 제가 멈춘다
+	var swapped_now: bool = _swapped and closed_texture != null and head != null and head.texture == closed_texture
+	if not alive or (head.texture != _base_texture and not swapped_now):
 		# 표정이 바뀌면 그 자리에서 눈을 뜬 상태로 돌려놓고, 다음 깜빡임은 처음부터 다시 기다린다
+		_swapped = false   # 남이 머리를 갈아끼웠으면 되돌릴 권리를 놓는다
 		if _amount > 0.0:
 			_amount = 0.0
 			_t = -1.0
@@ -103,6 +115,7 @@ func _process(delta: float) -> void:
 		var speed: float = 1.0 / maxf(close_time if held_closed else open_time, 0.001)
 		_amount = move_toward(_amount, 1.0 if held_closed else 0.0, speed * delta)
 		_t = -1.0
+		_apply_swap(head)
 		queue_redraw()
 		return
 	if _t < 0.0:
@@ -123,9 +136,23 @@ func _process(delta: float) -> void:
 		_t = -1.0
 		# 가끔은 곧바로 한 번 더 — 사이는 짧게
 		_wait = 0.12 if randf() < double_blink_chance else randf_range(interval_min, interval_max)
+	_apply_swap(head)
 	queue_redraw()
 
+## 눈 감은 그림이 있으면 감긴 정도에 따라 머리 그림을 갈아끼운다. 없으면 아무 일도 안 한다
+func _apply_swap(head: Sprite2D) -> void:
+	if closed_texture == null or head == null:
+		return
+	var want: bool = _amount >= closed_swap_at
+	if want == _swapped:
+		return
+	_swapped = want
+	head.texture = closed_texture if want else _base_texture
+
 func _draw() -> void:
+	# 눈 감은 그림을 쓰는 캐릭터는 타원을 안 그린다 — 그림이 눈을 이미 감고 있다
+	if closed_texture != null and not Engine.is_editor_hint():
+		return
 	var amount: float = preview_closed if Engine.is_editor_hint() else _amount
 	if Engine.is_editor_hint():
 		# 에디터에서는 타원 테두리를 옅게 보여줘서 눈에 맞추기 쉽게 한다

@@ -276,7 +276,7 @@ func _prepare_faces() -> void:
 	var win_rig := _win.get("rig") as BodyRig
 	if win_rig != null:
 		win_rig.set_action_face(true)
-		# 박수 자세가 있는 캐릭터(층간소음 빌런)는 주먹 대신 손뼉을 친다 — set_clapping이 액션 표정도 같이 켠다
+		# 박수 자세가 있는 캐릭터(층간소음 모자)는 주먹 대신 손뼉을 친다 — set_clapping이 액션 표정도 같이 켠다
 		if win_rig.clap_open_pose != null and win_rig.clap_close_pose != null:
 			win_rig.set_clapping(true)
 			_win["claps"] = true

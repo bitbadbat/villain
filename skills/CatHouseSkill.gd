@@ -13,7 +13,7 @@ const LAND_DUST := preload("res://combat/LandDust.gd")
 @export var build_time: float = 2.0
 ## 집 가운데가 캐릭터에서 앞으로 떨어진 거리(px)
 @export var place_distance: float = 62.0
-@export var house_hp: int = 40
+@export var house_hp: int = 10
 @export var spawn_interval: float = 7.0
 ## 맵에 이 캐릭터의 고양이가 이만큼 있으면 집이 더 안 내보낸다
 @export var max_cats: int = 4

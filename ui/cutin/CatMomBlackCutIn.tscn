@@ -70,7 +70,7 @@ fade_deg = 200.0
 [node name="Content" type="Node2D" parent="PanelCat" unique_id=1932750536]
 
 [node name="CatBody" type="Sprite2D" parent="PanelCat/Content" unique_id=505644902]
-position = Vector2(18, -162)
+position = Vector2(17, -177)
 scale = Vector2(0.1675, 0.1675)
 texture = ExtResource("6_cat_body")
 

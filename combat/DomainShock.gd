@@ -84,6 +84,7 @@ func _strike() -> void:
 		return
 	var half: float = hit_half_width() + hit_radius
 	var reach: float = depth + hit_radius + 60.0
+	Fighter.debug_hit_rect(Rect2(global_position.x - half, global_position.y + hit_below, half * 2.0, reach - hit_below))
 	for other in get_tree().get_nodes_in_group("fighters"):
 		if other == caster or not (other is Fighter) or not is_instance_valid(other):
 			continue

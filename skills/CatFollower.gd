@@ -75,7 +75,7 @@ const OUTLINE_COLOR := Color(0.1, 0.08, 0.08)
 @export var drop_through_time: float = 0.35
 ## 처음 나올 때 커지는 시간(초)
 @export var pop_time: float = 0.2
-@export var max_hp: int = 20
+@export var max_hp: int = 10
 ## 넉백 있는 공격에 맞으면 이만큼(초) 따라가기를 멈추고 눈을 감은 채 밀려난다
 @export var hurt_stun: float = 0.45
 ## 밀려나는 동안 가로 속도가 줄어드는 정도(px/초²)

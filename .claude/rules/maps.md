@@ -94,4 +94,5 @@ paths:
 ## 훈련장 `maps/TrainingGround.tscn`
 
 - 물리값·게임 속도 슬라이더(static var — 영구 반영은 `DEFAULT_*`), 모든 스킬 쿨 0. `Engine.time_scale`은 `_exit_tree`에서 복구. 충돌 보기 `CollisionDebugView.gd`, 바닥 눈금자 `FloorRuler.gd`
+- **스킬 판정도 충돌 보기에 빨갛게**(2026-10-11): Hitbox는 원래 보였고, **Hitbox 없이 거리·네모로 재는 판정**은 `Fighter.debug_hit_rect()`·`debug_hit_circle()`로 알려야 보인다(충돌 보기가 켜졌을 때만 모음 — `Fighter.debug_hit_view`). 연결한 곳: `Fighter.find_fighter_in_box`(대시·드롭킥·어깨 박치기), 수플렉스 잡기, 내무반 돌진, 층간 충격파(`DomainShock`), 아이 울음, 마우스 잡기. **새 스킬이 Hitbox 없이 판정하면 여기 한 줄 더할 것**. QA: 10캐릭터 x 평타·스킬1·2·궁에서 "맞았는데 안 보임" 0건
 - 디버그 격자: 대전 중 **G + '**(`maps/DebugGrid.gd`)

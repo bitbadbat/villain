@@ -24,7 +24,7 @@ const BOX_WALLS := Rect2(250, 85, 1080, 826)
 ## 오른쪽 큰 면(손잡이 구멍 있는 면)의 가운데 — 고양이 간판 자리
 const BOX_FRONT_CENTER := Vector2(838, 615)
 
-@export var max_hp: int = 40
+@export var max_hp: int = 10
 @export var spawn_interval: float = 7.0
 ## 주인의 고양이가 맵에 이만큼 있으면 더 안 내보낸다
 @export var max_cats: int = 4

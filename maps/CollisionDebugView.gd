@@ -29,6 +29,9 @@ var enabled: bool = false:
 		visible = value
 		_shapes.clear()
 		_ghosts.clear()
+		# Hitbox 없이 거리·네모로 재는 스킬 판정도 알려 받는다(Fighter.debug_hit_rect/circle)
+		Fighter.debug_hit_view = value
+		Fighter.debug_hit_areas.clear()
 		queue_redraw()
 
 ## 이번 프레임에 그릴 영역: { outlines, color }
@@ -54,6 +57,11 @@ func _process(_delta: float) -> void:
 	_shapes.clear()
 	_live_ids.clear()
 	_collect(get_parent())
+	# 스킬이 알려 준 판정(Hitbox 없는 것) — 알려 준 순간부터 잔상처럼 남겼다가 지운다
+	var areas: Array = Fighter.debug_hit_areas
+	for i in range(areas.size() - 1, -1, -1):
+		if _now - float(areas[i].time) > hitbox_linger:
+			areas.remove_at(i)
 	for id in _ghosts.keys():
 		if _now - _ghosts[id].time > hitbox_linger:
 			_ghosts.erase(id)
@@ -68,6 +76,14 @@ func _draw() -> void:
 		_draw_outlines(ghost.outlines, ghost.color, clampf(strength, 0.0, 1.0) * 0.7)
 	for entry in _shapes:
 		_draw_outlines(entry.outlines, entry.color, 1.0)
+	for area in Fighter.debug_hit_areas:
+		var strength: float = 1.0 - (_now - float(area.time)) / hitbox_linger
+		_draw_outlines([{"points": area.points, "closed": true}], COLOR_HITBOX, clampf(strength, 0.0, 1.0))
+
+func _exit_tree() -> void:
+	# 훈련장을 나가면 대전에서 쓸데없이 모으지 않게 끈다
+	Fighter.debug_hit_view = false
+	Fighter.debug_hit_areas.clear()
 
 # ------------------------------------------------------------------
 # 훑기

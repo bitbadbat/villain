@@ -251,6 +251,7 @@ func _touches_opponent() -> bool:
 	# 슈퍼아머 중(경찰 바디 수플렉스 등)에도 안 잡힌다 — 끌려가면 쓰던 기술이 끊긴다
 	if not _opponent.can_be_grabbed():
 		return false
+	Fighter.debug_hit_circle(_mouse_pos, catch_radius)
 	return _mouse_pos.distance_to(_opponent.global_position) < catch_radius
 
 func _grab() -> void:

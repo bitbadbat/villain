@@ -1586,6 +1586,10 @@ func find_opponent() -> Fighter:
 ## 근접 판정(자전거 돌진·어깨 들이박기 등)이 몸 사이 거리로 직접 확인할 때 쓴다.
 ## dx * direction이 -back_tolerance보다 작으면(명백히 등 뒤) 제외하고, 거의 겹친 경우는 통과시킨다
 static func find_fighter_in_box(fighter: Fighter, range_x: float, range_y: float, direction: float, back_tolerance: float = 20.0) -> Fighter:
+	if debug_hit_view:
+		var x0: float = -back_tolerance if direction >= 0.0 else -range_x
+		var x1: float = range_x if direction >= 0.0 else back_tolerance
+		debug_hit_rect(Rect2(fighter.global_position + Vector2(x0, -range_y), Vector2(x1 - x0, range_y * 2.0)))
 	for other in fighter.get_tree().get_nodes_in_group("fighters"):
 		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
 			continue
@@ -1597,6 +1601,29 @@ static func find_fighter_in_box(fighter: Fighter, range_x: float, range_y: float
 			continue
 		return other
 	return null
+
+## --- 훈련장 "충돌 영역 보기"용: Hitbox 없이 거리·네모로 직접 재는 스킬 판정을 알려 받는다 ---
+## 켜져 있을 때(CollisionDebugView가 켬)만 모은다 — 평소엔 아무 일도 안 한다
+static var debug_hit_view: bool = false
+## 알려 받은 판정 모양들: { points(월드 좌표, 닫힌 다각형), time(초) } — 보는 쪽이 오래된 걸 지운다
+static var debug_hit_areas: Array = []
+
+## 이 네모(월드 좌표)를 판정으로 쟀다고 알린다
+static func debug_hit_rect(rect: Rect2) -> void:
+	if not debug_hit_view:
+		return
+	debug_hit_areas.append({"points": PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y),
+		rect.end, Vector2(rect.position.x, rect.end.y)]), "time": Time.get_ticks_msec() / 1000.0})
+
+## 이 원(월드 좌표)을 판정으로 쟀다고 알린다
+static func debug_hit_circle(center: Vector2, radius: float) -> void:
+	if not debug_hit_view:
+		return
+	var pts := PackedVector2Array()
+	for i in 24:
+		var a: float = TAU * i / 24.0
+		pts.append(center + Vector2(cos(a), sin(a)) * radius)
+	debug_hit_areas.append({"points": pts, "time": Time.get_ticks_msec() / 1000.0})
 
 ## property(예: "move_speed_multiplier")에 id로 구분되는 배수 효과를 하나 건다.
 ## 같은 property에 걸린 다른 id의 효과와는 서로 지우지 않고 곱해져서 함께 적용된다.

@@ -44,21 +44,31 @@
 - 이펙트(먼지·바람·자국)는 **맵에 붙일 것**(캐릭터 자식이면 반전에 뒤집힘). 피격 움찔은 그림만(물리로 띄우면 확정 콤보 깨짐)
 - 무언가 사라지면 `git stash list`부터(GitHub Desktop이 치운 적 있음)
 - PowerShell 변수는 대소문자 무시. Bash heredoc 속 python의 `\` 줄끝 주의
+- **렉(한 프레임 25~70ms 멈춤) 주의**(2026-10-10 실측): 자주 띄우는 장면·그림을 `load()`로 그때그때 읽으면 아무도 안 쥐고 있을 때 **디스크에서 다시 읽는다**(3타 별 이펙트 22~27ms) → `preload` 상수나 static 캐시로 붙들 것. 그림을 통째로 읽는 계산(`get_image()` + 픽셀 훑기, 스미어 색 25~42ms)은 라운드 시작에 미리(`BodyRig._prewarm_smear`)
 
 ## 전투
 
 - **📌 평타는 무조건 금쪽이 기준**(30x30 상자, range 40, 파고들기·푸시백 값 공통) — 캐릭터마다 바꾸지 말 것. **📌 3타 준비시간 0.223초 고정**
 - `attack_duration`을 바꾸면 `windup`(= x0.4)도. 회전·발차기 타는 리그 `spin_duration`/`kick_duration`을 `finisher_windup`과 같이
+- **평타가 한 번이라도 맞으면 평타 쿨 0**(2026-10-10, 3타까지 다 맞혀도 쿨 없이 1타부터) — 무한 콤보는 3타 날리기가 막는다. 공중 휘두르기(`air_swing_enabled`)는 **점프 한 번에 한 번**(2026-10-11 — 맞혀도 다시 안 채움. 땅에 닿거나 **이단 점프하면** 다시 = `Fighter.jump` → `refill_air_swing()`) + 콤보 순서(1→2→3)를 따라감. **켠 캐릭터: 주정뱅이·악플러·금쪽이·지하철 아저씨·고양이 아주머니**(2026-10-10, 고양이 옷 합체 중엔 `CatUltimate`가 끔 — 합체 점프 공격은 아직). 공중에선 평타 부가 장치(리코더 던지기·X자 베기)를 안 부른다. ⚠️ 슈퍼아머 중인 상대는 3타에도 안 날아감(아머가 날아가기를 매 프레임 끊음)
+- **다음 타는 앞 타 모션이 끝나야 나간다**(2026-10-10, `ComboMeleeAttack.wait_for_swing_end`): 모션 중 입력은 선입력으로 기억, 그만큼 상대 경직도 늘림(`_anim_left` + 다음 windup + `link_stun_margin`). 실측 3타 다 맞는 시각 0.48 → 0.73초, 8캐릭 모두 3타 확정·방어로 못 빠져나감
 - 확정 콤보: **넉백을 키우면 파고들기(`combo_lunge`)도 같이**
 - 회전 타격: 루트 `scale.x` 변경은 다음 프레임 `_apply_pose` 첫머리에서 되돌리기, 최소 0.04
 - 3타 날아가기 `launch_finisher()`: `FINISHER_*`는 배율 1 기준, `finisher_distance_scale`은 속도 배수(거리 ≈ 제곱). 벽 튕김 속도는 `move_and_slide()` **전에** 기억. **높이는 잃은 체력으로 보간**(2026-10-08): `FINISHER_PEAK_FULL` 150 → `FINISHER_PEAK_EMPTY` 350px, 솟는 속도 `FINISHER_UP_SCALE` √3은 상한이 항상 걸리게 하는 용도(실측 풀피 156 / 반피 256 / 빈사 347px). 체력 배율(속도)에 높이가 또 곱해지지 않는다. **날아가는 동안 받는 피해 절반**(`FINISHER_FLYING_DAMAGE_SCALE`, `take_damage` 맨 앞 올림)
-- 클래시 `SkillClashManager`: 스킬1·2·궁만. 테스트에서 스킬은 클래시 대기창 뒤에 나감
+- 클래시 `SkillClashManager`: 스킬1·2·궁만. 테스트에서 스킬은 클래시 대기창 뒤에 나감. **대기창(0.15초) 뒤 실제로 나갈 때 `Fighter._cast_if_free()`가 경직·잡힘을 다시 본다**(2026-10-10 — 없을 땐 콤보 틈에 누른 반격이 다음 타 경직 중에 켜졌다)
 - 점프·중력은 **static var**(영구는 `DEFAULT_*`). **점프·중력을 바꾸면 맵 발판 높이(놀이터·지하철 의자·공사현장·헬스장) 재확인**
 - 착지 즉시 튕기는 기믹은 `cancel_landing_lag()` 필수
 - 방어: 디버프 차단은 `blocks_debuff(from_ultimate)` 한 곳(궁만 관통). 막힘 판정은 `Hitbox._try_hit()`에서 한 번만. 가드/대시 off는 `can_guard()`/`can_dash()` 맨 앞
-- **막혔을 때 표시는 `combat/GuardImpact.gd` 하나**(2026-10-10, "BLOCK" 글자·파란 불꽃 대체): `Hitbox._spawn_guard_impact()`가 때린 쪽 몸 가장자리에서 터뜨림. 보호막(`GuardShield`)은 그대로
+- **카운터 히트 연출 `combat/CounterHitFx.gd`**(2026-10-10): **0.4배 슬로 1초**(예전 0.15초 멈춤, 남의 슬로·KO 슬로가 걸려 있으면 안 건드림) + 흐림 0.98초(세기 `blur_px` 1.1 — 2026-10-10 50%로) + "COUNTER"(맞은 쪽 머리를 매 프레임 따라감) + **줌 1.35배 + 옆으로 돌아 보는 원근 10도**(길티기어식, 1초 — 전부 1초 안에 끝남). **휘두르기 궤적(SwingTrail·WeaponSmear)은 카운터부터 실제 시간 `TRAIL_TIME`(1.5초) 동안 생긴 점이 각자 1.5초를 살고, 흐림이 깔린 동안 흐림 위(FOCUS_Z)로 올라가 또렷하다**(`trail_active()`·`focus_active`) — 카운터의 목적이 "느린 트레일로 타격감", "흐린 건 오직 배경"(사용자). 원근은 화면을 빙 돌리는 게 아니라 다 그린 화면을 사다리꼴로 휘는 셰이더 `CounterHitWarp.gdshader`(z 3500, 색보정 위·레터박스 아래, 캐릭터까지 휨, HUD는 안 휨) — **맞은 사람 자리는 제자리**(fit·shift를 같이 풀어 가장자리 빈 곳도 안 읽음). 판은 내 형제 노드(내 modulate·visible을 안 물려받게)
+- **막혔을 때 표시는 `combat/GuardImpact.gd` 하나**(2026-10-10, "BLOCK" 글자·파란 불꽃 대체) — 고리는 **세로로 납작한 타원**(`ring_flatten` 0.38, 2026-10-10 반달에서 바꿈): `Hitbox._spawn_guard_impact()`가 때린 쪽 몸 가장자리에서 터뜨림. 보호막(`GuardShield`)은 그대로
 - **발판 내려가기**: 레이어 끄지 말고 발판에 collision exception(바디 전체에 걸림 → 한 바디에 막힘 충돌 섞지 말 것). 올라갈 발판은 `one_way_collision`
 - 히트스톱은 꺼져 있음. 켜면 복귀 타이머 `ignore_time_scale = true`. `Engine.time_scale` 바꾼 스킬은 `_exit_tree`에서 복구
+- **카운터 히트**(2026-10-10, 길티기어식이지만 **한 종류**): 상대 공격이 **나오는 중**(평타 휘두르기 시작~판정 끝 / 스킬 쓴 직후 `Skill.counter_window` 0.2초)에 때리면 경직 +0.3초(`Fighter.COUNTER_HIT_EXTRA_STUN`), **데미지는 그대로**. 후딜(판정 끝난 뒤)은 그냥 딜캐. 궁·방어·무적·슈퍼아머·단소 자세·3타로 날아가는 중은 카운터 없음
+  - 판정은 `Hitbox._try_hit()` 한 곳 — **`take_hit` 전에** 보고(맞으면 창이 닫힘), 경직은 **`connected` 뒤에** 더함(평타 확정 경직에 안 묻히게)
+  - **맞으면 하던 공격이 끊긴다**(`Fighter._interrupt_attack` → `ComboMeleeAttack.interrupt_by_hit` → `BodyRig.cancel_attack_swing`): 판정 켜지기 전이던 평타는 안 나감. 판정이 이미 켜졌으면 둘 다 맞음
+  - 연출 `combat/CounterHitFx.gd`(씬에 하나): 실제 시간 0.15초 멈춤 + 배경 흐림(`CounterHitBlur.gdshader`, z 2000 — 그동안 fighters 그룹을 z 2001로 올렸다 되돌림) + "COUNTER" 글자. 다른 슬로(KO 등)가 걸려 있으면 멈춤은 건너뜀
+  - ⚠️ 지하철 "단소 반격"(`CounterSkill`/`counter_stance`/`try_counter`)과 **이름 섞지 말 것** — 이쪽은 `counter_hit`/`counter_window`
+  - 흐림은 **밉맵(`filter_linear_mipmap`)에 기대지 말 것** — 호환 렌더러에서 안 흐려졌다. `far_blur`처럼 직접 여러 번 뽑는다
 
 ## 캐릭터
 
@@ -555,7 +565,7 @@ F6으로 띄우면 **게임과 같은 화면**에 헬스장이 나오고, 키보
 ### 궁극기 컷인 `ui/UltimateCutIn.tscn`
 
 - 기획 확정: 1.5초(장면 `cutin_duration` 우선), **연출 중 시간 정지**, 스킵 없음, 확정타 아님. `use_ultimate()` → 연출 → `fire_ultimate_now()`
-- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철·고양이 아주머니(검은 고양이만). **궁 스킬에 `cutin_scene_for(fighter)`가 있으면 스탯보다 우선**(같은 캐릭터라도 궁이 갈릴 때). **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
+- 장면은 `CharacterStats.ultimate_cutin_scene`, 파츠 흔들기 `ui/cutin/CutInAnimation.gd`. 있는 캐릭터: 주정뱅이·금쪽이·악플러·일진·경찰·지하철·고양이 아주머니(세 고양이 모두). **궁 스킬에 `cutin_scene_for(fighter)`가 있으면 스탯보다 우선**(같은 캐릭터라도 궁이 갈릴 때). **캐릭터를 움직여 넣을 땐 리그(`<캐릭터>Rig.tscn`)를 쓸 것**
 - 지하철 컷인: ⚠️ `Metro!.png` 무늬가 기울어 칸마다 `rotation = -0.0158` + `skew = 0.0158`(그림 바꾸면 재측정), 이동은 x만. 칸 수·틈을 바꾸면 `train_from_x`/`train_to_x`도. 선글라스 반짝은 `LensGlint.always_show`
 - 금쪽이 컷인: 원래 머리 복원 → `set_action_face(true)` 순서. 경찰: 얼굴 두 장 크기·위치 같아야 함
 

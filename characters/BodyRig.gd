@@ -208,6 +208,8 @@ extends Node2D
 @export var fan_ghost_count: int = 6
 @export var fan_ghost_life: float = 0.09
 @export_range(0.0, 1.0, 0.05) var fan_ghost_alpha: float = 0.4
+## 도는 무기 양 끝이 지나간 길을 겹겹의 호(흰 심 + 분홍 번짐)로 그린다(`combat/SpinArcTrail.gd`, 2026-10-10 사용자 레퍼런스)
+@export var fan_trail: bool = true
 ## 후려치는 구간에서 손이 직선이 아니라 이동 방향의 아래쪽으로 부풀며 호를 그리는 정도(px).
 ## 0이면 예전처럼 곧장 직선으로 간다. 아래로 훑어서 올려치는 스윙(악플러 키보드)에서 쓴다
 @export var attack_swing_arc: float = 0.0
@@ -638,6 +640,11 @@ var held_item_l_thrown: bool = false
 @export var action_head_turn_textures: Array[Texture2D] = []
 @export var action_head_turn_anchors: Array[Vector3] = []
 @export var action_head_turn_faces_left: Array[bool] = []
+## **술 머금은 얼굴**(drunk_head_texture)일 때 대신 쓸 머리 돌리기 세트 — 액션 세트와 같은 모양이고 **0번은 drunk_head_texture**다(2026-10-10 주정뱅이).
+## 비워 두면 술 머금은 동안엔 머리를 안 돌린다(예전과 같음). 액션 표정이 켜져 있으면 액션 세트가 먼저다
+@export var drunk_head_turn_textures: Array[Texture2D] = []
+@export var drunk_head_turn_anchors: Array[Vector3] = []
+@export var drunk_head_turn_faces_left: Array[bool] = []
 ## 머리가 도는 **도중에만** 몸통에 끼울 그림들 — 평소와 머리가 정면일 때는 Body 원래 그림(정면 몸통) 그대로고,
 ## 그 사이 단계(머리 측면1~측면3)에 이 그림들을 순서대로 나눠 끼운다(예: [3/4, 거의 정면]). 2026-09-26 금쪽이, 사용자 결정.
 ## 그림은 전부 **오른쪽을 보고** 그리고 Body 원래 그림과 같은 캔버스여야 한다(배율은 그대로 쓰고 바닥 가운데만 맞춘다)
@@ -676,6 +683,19 @@ var held_item_l_thrown: bool = false
 ## 평타 1·2·3타 때 무기 끝(맨손이면 치는 주먹, 발차기면 발)이 지나간 자리에 하얀 띠(combat/SwingTrail.gd)를 남긴다.
 ## ComboMeleeAttack이 휘두를 때 `play_swing_trail()`을 불러야 켜진다 — 스킬·카운터의 스윙엔 안 나온다
 @export var swing_trail: bool = true
+## 켜면 평타의 하얀 궤적 대신 스미어(`combat/WeaponSmear.gd`)가 나온다 — 지나간 자리를 속이 찬 초승달 띠로 칠하고,
+## 색은 **치는 조각 그림**에서 반대쪽 끝 → 끝 순서로 뽑는다: 무기 = 무기 그림 / 맨손 = 주먹 / 발차기 = 발(2026-10-10, 전 캐릭터 기본 켬).
+## `swing_trail`도 켜져 있어야 한다(같은 길목을 쓴다)
+@export var weapon_smear: bool = true
+## 스미어 색 줄 수(손잡이 → 끝) — 많을수록 무기 무늬를 잘게 따른다
+@export var weapon_smear_bands: int = 6
+## 스미어가 무기 반대쪽 끝에서 얼마나 떨어진 곳부터 칠해지는지(무기 길이 비율). 0 = 무기 전체(2026-10-10 사용자 "병의 모든 부분에서")
+@export_range(0.0, 0.8, 0.05) var weapon_smear_inner: float = 0.0
+## 띠 굵기 배수 — 1이면 치는 조각(무기·주먹·발) 길이만큼, 크면 몸 쪽으로 그만큼 더 넓게 칠한다(2026-10-10 사용자 "굵게")
+@export_range(1.0, 4.0, 0.1) var weapon_smear_width: float = 1.8
+## 띠 색 진하기 — 그림에서 뽑은 색의 채도에 곱하고(1보다 크면 진해짐) 밝기는 weapon_smear_value를 곱한다(2026-10-10 "진하게")
+@export_range(0.5, 3.0, 0.05) var weapon_smear_saturation: float = 1.6
+@export_range(0.3, 1.5, 0.05) var weapon_smear_value: float = 0.88
 
 ## --- 발차기 마무리 (촉법소년 3타) ---
 ## 몇 번째 타를 발로 찰지 (0=1타, 2=3타). **-1이면 안 찬다** — 기본값이 -1이라 다른 캐릭터는 영향이 없다.
@@ -724,6 +744,8 @@ var held_item_l_thrown: bool = false
 @export var head_back_texture: Texture2D
 ## 뒤통수 그림의 머리 공 (중심 x, 중심 y, 지름) — head_turn_anchors와 같은 방법으로 잰 그림 픽셀
 @export var head_back_anchor: Vector3 = Vector3.ZERO
+## 몸통 뒷모습 — 뒤통수(head_back_texture)를 보일 때 같이 끼운다. 캔버스가 달라도 불투명 높이·바닥 가운데를 원래 몸통에 맞춘다(2026-10-10 주정뱅이)
+@export var body_back_texture: Texture2D
 ## 뒤통수를 보여주는 구간 반폭(한 바퀴 대비 비율) — spin_back_flip 앞뒤로 이만큼. **spin_back_flip + 이 값이 spin_strike보다 작아야** 때릴 때 얼굴(옆모습)이 보인다
 @export_range(0.01, 0.2, 0.01) var spin_back_show: float = 0.07
 
@@ -1183,6 +1205,9 @@ var _swing_serial: int = 0
 var _trail_serial: int = -1
 var _trail_src: Node2D = null
 var _trail_tip := Vector2.ZERO
+## 스미어일 때 손잡이 쪽 점(조각 로컬) / 지금 띠가 스미어인지
+var _trail_inner := Vector2.ZERO
+var _trail_is_smear: bool = false
 ## 직전 프레임 조각 자세(리그 기준) — 프레임 사이를 채운다(_smear_prev와 같은 이유)
 var _trail_prev := Transform2D()
 var _trail_has_prev: bool = false
@@ -1312,6 +1337,9 @@ var _fan_phase: float = 0.0
 ## 선풍기 회전 잔상 칸(주먹·스미어 잔상과 따로 쓴다) — 처음 쓸 때 만든다
 var _fan_ghosts: Array[Sprite2D] = []
 var _fan_ghost_left: Array[float] = []
+## 회전 호 트레일(`SpinArcTrail`) — 처음 돌 때 만들어 두고 다시 쓴다
+var _fan_trail_node: Node2D = null
+const SPIN_ARC_TRAIL_SCRIPT := preload("res://combat/SpinArcTrail.gd")
 ## 선풍기 회전 중 무기 자식의 원래 위치(끝나면 복구) — 회전축을 손 중심에 맞추려고 잠깐 (0,0)으로 옮긴다.
 ## 이러면 무기 중심이 손(HandRHold 원점)에 와서, 손 주위를 공전하지 않고 그 자리에서 제자리로 자전한다
 var _fan_child_rest: Dictionary = {}
@@ -1333,6 +1361,10 @@ const BLOCKED_OUTLINE_SHADER := preload("res://combat/BlockedOutline.gdshader")
 const SWING_TRAIL_SCRIPT := preload("res://combat/SwingTrail.gd")
 ## 프레임 사이에 끼워 넣는 궤적 점 수 — 많을수록 호가 매끈하다
 const SWING_TRAIL_FILL: int = 4
+## 무기 스미어(combat/WeaponSmear.gd) — 새 스크립트라 preload로 쓴다
+const WEAPON_SMEAR_SCRIPT := preload("res://combat/WeaponSmear.gd")
+## 무기 그림 → [색 줄무늬, 윤곽선 색] 캐시(그림 경로 + 줄 수로 기억한다)
+static var _smear_color_cache: Dictionary = {}
 ## 지금 빨간 테두리가 걸려 있는 파츠들 (끝날 때 material을 떼어내야 해서 들고 있는다)
 var _blocked_outline_parts: Array = []
 ## 머리 떨림 남은 시간과 전체 시간(초)
@@ -1473,6 +1505,21 @@ func _ready() -> void:
 	if _eat_bowl:
 		_eat_bowl_rest_scale = _eat_bowl.scale
 		_eat_bowl.visible = false
+	if _fighter != null and swing_trail and weapon_smear:
+		_prewarm_smear.call_deferred()
+
+## 스미어 색·보이는 영역을 **라운드 시작 때 미리** 계산해 둔다(2026-10-10 렉 실측: 캐릭터마다 첫 휘두르기에
+## 그림을 통째로 읽느라 25~42ms 멈췄다). 결과는 그림별 static 캐시라 둘째 판부터는 바로 넘어간다
+func _prewarm_smear() -> void:
+	var parts: Array = [_hand_l, _hand_r, _foot_r]
+	if _hand_r_hold:
+		parts.append_array(_hand_r_hold.get_children())
+	for part in parts:
+		var sprite := part as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		var tip: Vector2 = _far_corner_from_grip(sprite) if sprite.get_parent() == _hand_r_hold else _far_corner_from_rig(sprite)
+		_weapon_smear_colors(sprite, _far_corner_from(sprite, tip), tip)
 
 ## 헬스장 단계만큼 손·발 그림을 키운다(기획서 "강화된 부위가 변해 한눈에 보임") — `set_limb_stage()`가 값을 넣는다.
 ## **원래 크기에 곱한다** — 캐릭터마다 손·발 그림 크기가 달라서 절대값으로 쓰면 다 어긋난다.
@@ -1830,6 +1877,7 @@ func _apply_pose(speed_ratio: float) -> void:
 		_attack_pose_on = _pose_attack_scenes()
 		if not _attack_pose_on:
 			_pose_attack_hand()
+			_keep_air_swing_in_reach()
 	# 맨손 잽이면 반대 손을 얼굴 앞에 올린다 — 한 손은 막고 한 손은 뻗는 권투 자세.
 	# 지금 자세(걷기·잽) 위에 블렌드만큼 섞어서, 타가 바뀌거나 끝날 때 손이 미끄러지듯 오간다
 	if not _attack_pose_on:
@@ -2161,11 +2209,81 @@ func _apply_spin_turn() -> void:
 	scale.x = _spin_base_x * turn
 	_spin_applied = true
 
+## 뒤집지 않고 돌기 — 머리(·몸통) 측면 그림을 옆 → 정면 → 옆으로 넘겼다 되돌린다(p 0~1). 몸 좌우는 그대로다.
+## 뒷모습 그림이 없어 진짜 한 바퀴는 못 그린다 — 대신 카메라 쪽으로 홱 돌았다 돌아오는 게 "도는" 것으로 읽힌다
+## 뒤집지 않고 도는 동안 **팔다리가 몸 둘레를 한 바퀴 돈다**(2026-10-10 사용자: "축법소년 3타처럼 팔다리도 한 바퀴").
+## 옆모습 리그라 앞뒤(x)만 보이는데, 몸을 각도 θ만큼 돌리면 팔다리 자리는 x' = 앞뒤·cosθ − 옆·sinθ 로 움직인다.
+## 오른쪽(무기 손·오른발)은 카메라 쪽(옆 +), 왼쪽은 반대쪽(옆 −)으로 친다 — 정면(θ 90°)이면 팔이 몸 양옆으로 벌어지고,
+## 뒤로 돌면(θ 180°) 앞뒤가 뒤바뀐다. θ는 머리 그림과 맞춘다: 정면까지(앞 45%) 0→90°, 뒷모습 동안 90→270°, 마지막 20%에 270→360°.
+## 무기 든 손은 air_swing_weapon_gather 비율만큼만 돈다 — 후려치는 순간이 뒷모습 구간이라 다 돌리면 무기가 몸 뒤에서 휘둘러진다
+func _turn_angle(p: float) -> float:
+	if head_back_texture != null and head_back_anchor.z > 0.0:
+		if p < 0.45:
+			return p / 0.45 * PI * 0.5
+		if p < 0.8:
+			return PI * 0.5 + (p - 0.45) / 0.35 * PI
+		return PI * 1.5 + (p - 0.8) / 0.2 * PI * 0.5
+	# 뒷모습 그림이 없으면 옆 → 정면 → 옆(돌아온다)
+	return (1.0 - absf(2.0 * p - 1.0)) * PI * 0.5
+
+func _gather_turn_limbs(p: float) -> void:
+	var th: float = _turn_angle(p)
+	var c: float = cos(th)
+	var sn: float = sin(th)
+	# 팽이처럼 — 도는 동안 손발이 몸에서 멀어졌다가 끝에 제자리로 돌아온다
+	var bump: float = sin(PI * clampf(p, 0.0, 1.0))
+	var hand_grow: float = 1.0 + air_swing_orbit_hand_grow * bump
+	var foot_grow: float = 1.0 + air_swing_orbit_grow * bump
+	var parts := [[_hand_l, -air_swing_orbit_hand_side, 1.0, hand_grow], [_foot_l, -air_swing_orbit_foot_side, 1.0, foot_grow],
+		[_foot_r, air_swing_orbit_foot_side, 1.0, foot_grow],
+		[_hand_r, air_swing_orbit_hand_side, air_swing_weapon_gather, hand_grow], [_hand_r_hold, air_swing_orbit_hand_side, air_swing_weapon_gather, hand_grow]]
+	for e in parts:
+		var part: Node2D = e[0]
+		if part == null:
+			continue
+		var x: float = part.position.x
+		part.position.x = lerpf(x, (x * c - float(e[1]) * sn) * float(e[3]), float(e[2]))
+
+func _apply_turn_no_flip(p: float) -> void:
+	var front: int = _turn_textures().size()
+	if front <= 0:
+		return
+	p = clampf(p, 0.0, 1.0)
+	_gather_turn_limbs(p)
+	# **뒷모습 그림이 있으면 진짜 한 바퀴**: 옆 → 비스듬히 → 정면(앞 45%) → 뒷모습(가운데 35%) → 옆(마지막 20%).
+	# 정면에서 뒷모습으로 바로 넘어간다 — 반대쪽 옆모습 그림이 없어서(뒤집지 않기로 했다, 2026-10-10)
+	if head_back_texture != null and head_back_anchor.z > 0.0:
+		if p < 0.45:
+			var step_f: int = clampi(roundi(p / 0.45 * front), 0, front)
+			if step_f == 0:
+				_clear_head_frame()
+			else:
+				_set_head_frame(step_f, 1.0)
+		elif p < 0.8:
+			_set_head_image(head_back_texture, head_back_anchor, false, 1.0)
+			if body_back_texture != null:
+				_set_body_image(body_back_texture)
+			else:
+				_set_body_frame(0, 1.0)
+		else:
+			_clear_head_frame()
+		return
+	var tri: float = 1.0 - absf(2.0 * p - 1.0)
+	var step: int = clampi(roundi(tri * front), 0, front)
+	if step == 0:
+		_clear_head_frame()
+	else:
+		_set_head_frame(step, 1.0)
+
 ## 머리 그림으로 한 바퀴 돌기(p = 한 바퀴 진행도 0~1).
 ## 0 ~ 0.5: 머리가 측면1 -> ... -> 정면 -> ... -> 옆모습(방향 전환과 같은 길), 0.25(머리 정면)에 몸이 뒤집힌다
 ## 0.5 ~ : 머리는 옆모습 그대로(뒤통수 그림이 없다), spin_back_flip에 몸이 다시 앞으로 뒤집힌다
 ## 몸 뒤집기는 가로 부호만 바꾸고 다음 프레임 첫머리에서 되돌린다(얇게 누르던 예전 방식과 같은 장치)
 func _apply_spin_head_turn(p: float) -> void:
+	# 공중 큰 휘두르기는 몸을 안 뒤집고 측면 그림만 넘긴다(air_swing_spin_flip이 꺼져 있으면)
+	if _attack_variant == AIR_SWING_VARIANT and not air_swing_spin_flip:
+		_apply_turn_no_flip(p)
+		return
 	var back_flip: float = clampf(spin_back_flip, 0.5, 0.99)
 	var mirrored: bool = p >= 0.25 and p < back_flip
 	if p < 0.5:
@@ -2293,6 +2411,110 @@ func _apply_slash_z(on: bool) -> void:
 ## 베기 한 번. index는 위 SLASHES 차례(넘치면 처음으로 돌아간다)
 func play_weapon_slash(index: int, duration: float = -1.0) -> void:
 	play_attack_swing(SLASH_VARIANT_BASE + (index % SLASHES.size()), duration)
+
+## --- 공중 큰 휘두르기 (주정뱅이 점프 평타, 2026-10-10) ---
+## **승룡권처럼** 발 아래 앞에서 병을 **앞쪽 반원을 그리며 머리 위까지** 크게 올려치고, 그동안 몸이 한 바퀴 돈다
+## (`spin_*` 회전 타격 장치를 그대로 탄다). 반대 손은 감을 때 앞으로 나갔다가 올려칠 때 뒤 아래로 당겨진다.
+## 베기와 같은 길(손 궤도·상체 넘어감·무기 z)을 타고, 값은 SLASHES 표 대신 아래 export에서 읽는다 —
+## 경관봉 난무가 표를 돌아가며 쓰므로 표에 칸을 더하면 난무 순서가 바뀐다
+const AIR_SWING_VARIANT := SLASH_VARIANT_BASE + 1000
+@export_group("공중 큰 휘두르기")
+## 감을 때 / 후릴 때 각도(도) — 부호 규칙은 SLASHES와 같다(음수 = 반시계 = 위로)
+@export var air_swing_raise_deg: float = -60.0
+@export var air_swing_swing_deg: float = -150.0
+## 감았을 때 / 다 후렸을 때 손 자리(제자리 기준, +x = 앞)
+@export var air_swing_raise_off: Vector2 = Vector2(-6, 30)
+@export var air_swing_slam_off: Vector2 = Vector2(14, -84)
+## 손이 지나는 길이 부푸는 정도(px). **아래→위로 올려치는 길에선 양수가 앞쪽**(위→아래면 반대) — 클수록 반원이 둥글다
+@export var air_swing_arc: float = 110.0
+## 올려칠 때 상체가 넘어가는 각도(도). 음수 = 뒤로 젖힌다(승룡권처럼 위로 솟는 느낌)
+@export var air_swing_lean_deg: float = -14.0
+## 휘두르는 동안 몸이 한 바퀴 도는지(회전 타격 `spin_end`·`spin_back_flip`을 그대로 쓴다)
+@export var air_swing_spin: bool = true
+## 돌 때 몸을 좌우로 **뒤집을지**. 끄면(기본) 뒤집지 않고 머리·몸통 측면 그림만 넘겨 "옆 → 정면 → 옆"으로 카메라 쪽을 한 번 보고 돌아온다
+## (2026-10-10 사용자: "뒤집지 말고 측면 사진으로 자연스럽게"). 뒷모습 그림이 오면 진짜 한 바퀴로 바꿀 자리
+@export var air_swing_spin_flip: bool = false
+## 돌며 팔다리가 몸 둘레를 돌 때 **무기 든 손**은 이 비율만큼만 돈다(0 = 안 돎, 1 = 다른 팔다리와 같이). 휘두르기가 몸 뒤로 숨지 않게
+## (2026-10-11: 1로 올렸다가 트레일이 몸 뒤로 그려져서 0으로 — 무기 손은 앞쪽 올려치기만 하고 안 돈다)
+@export_range(0.0, 1.0, 0.05) var air_swing_weapon_gather: float = 0.0
+## 돌 때 손·발이 몸 옆으로 벌어지는 폭(px, 리그 좌표) — 정면을 볼 때 손이 몸 양옆 이만큼에 온다
+## (2026-10-11 사용자: "주먹이랑 발이 팽이처럼 한 바퀴" — 18/8에서 키웠다)
+@export var air_swing_orbit_hand_side: float = 12.0
+@export var air_swing_orbit_foot_side: float = 12.0
+## 도는 한가운데서 발이 몸에서 더 멀어지는 비율(0 = 그대로, 0.6 = 1.6배) — 처음·끝은 제자리라 이어짐이 안 끊긴다
+@export var air_swing_orbit_grow: float = 0.3
+## 손만 따로. 2026-10-11 사용자가 두 번 줄임("팔 간격 절반" -> "다리랑 팔 더 줄여"): 손 옆 폭 34 -> 21 -> 12, 멀어짐 0.6 -> 0.3 -> 0.15 / 발 옆 폭 22 -> 12, 멀어짐 0.6 -> 0.3
+@export var air_swing_orbit_hand_grow: float = 0.15
+## 반대 손(왼손)이 올려칠 때 가는 자리(제자리 기준, +x = 앞)와 각도(도) — 감을 땐 이 반대쪽으로 반쯤 나간다
+@export var air_swing_off_hand: Vector2 = Vector2(-14, 14)
+@export var air_swing_off_hand_deg: float = 40.0
+@export_group("")
+
+## 공중 휘두르기 무기 끝이 못 넘어가는 원(리그 좌표). 반지름이 0 이하면 안 막는다
+var _air_reach_center: Vector2 = Vector2.ZERO
+var _air_reach_radius: float = -1.0
+
+## reach_center·reach_radius = 판정 반원(캐릭터 기준 px, +x = 바라보는 쪽). 주면 **무기 끝(맨손이면 주먹 끝)이
+## 그 원 밖으로 안 나가게** 손을 안쪽으로 당긴다 — 트레일이 판정보다 멀리 그려지면 허공을 치는 것처럼 보였다
+## (2026-10-11 사용자 QA: 다섯 캐릭터 모두 판정 밖으로 46~64px 나갔다)
+func play_air_swing(duration: float, reach_center: Vector2 = Vector2.ZERO, reach_radius: float = -1.0) -> void:
+	play_attack_swing(AIR_SWING_VARIANT, duration, air_swing_spin)
+	_air_reach_radius = -1.0
+	if reach_radius > 0.0:
+		# 캐릭터 좌표 -> 리그 좌표(리그는 바라보는 쪽이 늘 +x, 좌우는 scale.x 부호로만 뒤집힌다)
+		var face: float = signf(scale.x) if scale.x != 0.0 else 1.0
+		_air_reach_center = transform.affine_inverse() * Vector2(reach_center.x * face, reach_center.y)
+		_air_reach_radius = reach_radius / maxf(absf(scale.y), 0.001)
+
+## 공중 휘두르기 중 무기 끝이 판정 반원 밖이면 손을 그만큼 안으로 당긴다(모양은 그대로, 넘친 만큼만)
+func _keep_air_swing_in_reach() -> void:
+	if _attack_variant != AIR_SWING_VARIANT or _air_reach_radius <= 0.0:
+		return
+	var hand: Sprite2D = _attack_hand()
+	if hand == null:
+		return
+	# 무기(맨손이면 주먹) 그림의 네 모서리가 전부 판정 반원 안에 들게 한다
+	var item: Sprite2D = _held_weapon_sprite() if hand == _hand_r else null
+	var part: Sprite2D = item if item else hand
+	var rect: Rect2 = part.get_rect()
+	var corners: Array[Vector2] = []
+	for c in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
+		corners.append((item.transform * c).rotated(hand.rotation) if item else (c * hand.scale).rotated(hand.rotation))
+	# 원 밖 — 가운데에서 가장 먼 모서리만큼 안으로
+	var far: float = 0.0
+	var far_dir := Vector2.ZERO
+	for v in corners:
+		var off: Vector2 = hand.position + v - _air_reach_center
+		if off.length() - _air_reach_radius > far:
+			far = off.length() - _air_reach_radius
+			far_dir = off.normalized()
+	hand.position -= far_dir * far
+	# 반원이라 뒤쪽(원 가운데보다 뒤)도 판정 밖 — 가장 뒤에 있는 모서리만큼 앞으로
+	var back: float = 0.0
+	for v in corners:
+		back = maxf(back, _air_reach_center.x - (hand.position.x + v.x))
+	hand.position.x += back
+
+## 오른손에 든 그림 중 가장 큰 것(무기 본체). 없거나 안 보이면 null
+func _held_weapon_sprite() -> Sprite2D:
+	if _hand_r_hold == null or not _hand_r_hold.visible:
+		return null
+	var item: Sprite2D = null
+	var best: float = 0.0
+	for child in _hand_r_hold.get_children():
+		if child is Sprite2D and child.visible and child.texture:
+			var area: float = child.get_rect().get_area() * absf(child.scale.x * child.scale.y)
+			if area > best:
+				best = area
+				item = child
+	return item
+
+## 지금 베기의 값 — 공중 큰 휘두르기면 위 export, 아니면 SLASHES 표
+func _slash_entry() -> Dictionary:
+	if _attack_variant == AIR_SWING_VARIANT:
+		return {"raise_deg": air_swing_raise_deg, "swing_deg": air_swing_swing_deg, "raise_off": air_swing_raise_off,
+			"slam_off": air_swing_slam_off, "arc": air_swing_arc, "slash_deg": 0.0, "lean_deg": air_swing_lean_deg}
+	return SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
 
 ## 이번 베기의 참격 자국 기울기(라디안) — 자국을 뿌리는 쪽이 물어본다
 static func slash_angle(index: int) -> float:
@@ -2449,6 +2671,11 @@ func _pose_land_crouch() -> void:
 		_hand_r.position.y += down * 0.85
 	if _hand_l:
 		_hand_l.position.y += down * 0.85
+
+## 휘두르던 모션을 그 자리에서 끝낸다 — 준비동작 중에 맞아 공격이 끊겼을 때(`ComboMeleeAttack.interrupt_by_hit`, 카운터 히트).
+## 모션이 저절로 끝난 것과 같은 상태가 된다. 바로 움찔 자세가 덮어서 팔이 돌아가는 게 튀어 보이지 않는다
+func cancel_attack_swing() -> void:
+	_attack_time = 0.0
 
 ## 맞은 순간 움찔 자세를 시작한다. power(0~1)가 클수록 크게 숙인다 — Fighter가 데미지로 정해 넘긴다.
 ## 이미 움찔하는 중에 또 맞으면 처음부터 다시(연타를 맞을 때마다 다시 꺾인다)
@@ -2620,13 +2847,16 @@ func _swing_trail_window() -> bool:
 	return progress >= ATTACK_STRIKE_START and progress <= end + 0.06
 
 ## 궤적이 따라갈 조각과 그 조각 안의 끝점(조각 로컬 좌표)을 고른다.
-## 발차기·드롭킥 = 오른발 가운데 / 무기를 든 손으로 치면 = 무기 그림에서 손잡이(손)에서 가장 먼 모서리 / 맨손 = 치는 주먹 가운데
+## 발차기·드롭킥 = 오른발 / 무기를 든 손으로 치면 = 무기 그림에서 손잡이(손)에서 가장 먼 모서리 / 맨손 = 치는 주먹.
+## 스미어(weapon_smear)면 발·주먹도 몸에서 가장 먼 모서리(주먹·발끝)를 끝점으로 — 띠가 그 조각 전체 폭으로 나온다
 func _pick_swing_trail_source() -> void:
 	_trail_src = null
 	var kick: bool = (attack_kick_hit >= 0 and _attack_variant == attack_kick_hit) or _dk_blend > 0.001
 	if kick and _foot_r:
 		_trail_src = _foot_r
 		_trail_tip = _foot_r.get_rect().get_center()
+		if weapon_smear:
+			_trail_tip = _far_corner_from_rig(_foot_r)
 		return
 	var hand: Sprite2D = _attack_hand()
 	if hand == _hand_r and _hand_r_hold and _hand_r_hold.visible:
@@ -2646,9 +2876,19 @@ func _pick_swing_trail_source() -> void:
 	if hand:
 		_trail_src = hand
 		_trail_tip = hand.get_rect().get_center()
+		if weapon_smear:
+			_trail_tip = _far_corner_from_rig(hand)
+
+## 맨손·발 스미어의 끝점 — 그 조각 보이는 영역의 모서리 중 몸(리그 원점)에서 가장 먼 곳(주먹·발끝). 조각 로컬 좌표
+func _far_corner_from_rig(part: Sprite2D) -> Vector2:
+	return _far_corner_from(part, part.get_global_transform().affine_inverse() * global_position)
 
 ## 무기 그림에서 **보이는 영역**의 네 모서리 중 손잡이(HandRHold 원점)에서 가장 먼 곳 — 무기 끝으로 쓴다(그림 로컬 좌표)
 func _far_corner_from_grip(item: Sprite2D) -> Vector2:
+	return _far_corner_from(item, item.transform.affine_inverse() * Vector2.ZERO)
+
+## 무기 그림 보이는 영역의 네 모서리 중 from(그림 로컬 좌표)에서 가장 먼 곳
+func _far_corner_from(item: Sprite2D, from: Vector2) -> Vector2:
 	var rect: Rect2 = item.get_rect()
 	if not item.region_enabled:
 		var opaque: Rect2 = _opaque_rect_of(item.texture)
@@ -2656,10 +2896,9 @@ func _far_corner_from_grip(item: Sprite2D) -> Vector2:
 		var x: float = tex_size.x - opaque.end.x if item.flip_h else opaque.position.x
 		var y: float = tex_size.y - opaque.end.y if item.flip_v else opaque.position.y
 		rect = Rect2(rect.position + Vector2(x, y), opaque.size)
-	var grip: Vector2 = item.transform.affine_inverse() * Vector2.ZERO
 	var best := rect.position
 	for c in [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]:
-		if c.distance_squared_to(grip) > best.distance_squared_to(grip):
+		if c.distance_squared_to(from) > best.distance_squared_to(from):
 			best = c
 	return best
 
@@ -2685,7 +2924,19 @@ func _update_swing_trail() -> void:
 		if _trail_src == null:
 			_end_swing_trail()
 			return
-		var trail = SWING_TRAIL_SCRIPT.new()
+		var trail
+		_trail_is_smear = weapon_smear and _trail_src is Sprite2D and _trail_src.texture != null
+		if _trail_is_smear:
+			var item: Sprite2D = _trail_src
+			# 띠는 **무기 반대쪽 끝(끝점에서 가장 먼 모서리) ~ 끝점** 전체에서 나온다 — 병의 모든 부분이 지나간 자리(2026-10-10 사용자)
+			var base: Vector2 = _far_corner_from(item, _trail_tip)
+			_trail_inner = _trail_tip.lerp(base.lerp(_trail_tip, weapon_smear_inner), weapon_smear_width)
+			trail = WEAPON_SMEAR_SCRIPT.new()
+			var colors: Array = _weapon_smear_colors(item, base, _trail_tip)
+			trail.bands = _deepen_smear_colors(colors[0])
+			trail.outline_color = colors[1]
+		else:
+			trail = SWING_TRAIL_SCRIPT.new()
 		map.add_child(trail)
 		# 캐릭터 뒤, 배경 앞 — z는 캐릭터와 같게, 트리 순서만 캐릭터 바로 앞(대시 잔상과 같은 방식)
 		trail.z_index = body.z_index
@@ -2701,10 +2952,98 @@ func _update_swing_trail() -> void:
 	if _trail_has_prev:
 		for k in range(1, SWING_TRAIL_FILL + 1):
 			var w: float = float(k) / float(SWING_TRAIL_FILL + 1)
-			_swing_trail_node.add_point(rig_xf * (_trail_prev.interpolate_with(now, w) * _trail_tip))
-	_swing_trail_node.add_point(rig_xf * (now * _trail_tip))
+			var mid: Transform2D = _trail_prev.interpolate_with(now, w)
+			if _trail_is_smear:
+				_swing_trail_node.add_sample(rig_xf * (mid * _trail_inner), rig_xf * (mid * _trail_tip))
+			else:
+				_swing_trail_node.add_point(rig_xf * (mid * _trail_tip))
+	if _trail_is_smear:
+		_swing_trail_node.add_sample(rig_xf * (now * _trail_inner), rig_xf * (now * _trail_tip))
+	else:
+		_swing_trail_node.add_point(rig_xf * (now * _trail_tip))
 	_trail_prev = now
 	_trail_has_prev = true
+
+## 무기 그림에서 스미어 색을 뽑는다 → [손잡이 → 끝 색 줄무늬, 윤곽선 색].
+## 보이는 픽셀마다 손잡이(grip)→끝(tip) 축에 내린 위치로 줄을 정해 평균을 낸다. 아주 어두운 픽셀은 윤곽선으로 따로 모은다
+## (안 그러면 검은 테두리가 섞여 띠가 칙칙해진다). 빈 줄은 이웃 줄 색으로 채운다. grip·tip은 조각 로컬 좌표
+func _weapon_smear_colors(item: Sprite2D, grip: Vector2, tip: Vector2) -> Array:
+	var count: int = maxi(weapon_smear_bands, 1)
+	var tex: Texture2D = item.texture
+	var key: String = "%s|%d|%s" % [tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id()), count, item.region_rect]
+	if _smear_color_cache.has(key):
+		return _smear_color_cache[key]
+	var bands := PackedColorArray()
+	bands.resize(count)
+	bands.fill(Color.WHITE)
+	var outline := Color(0.05, 0.05, 0.06)
+	var img: Image = tex.get_image()
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		var rect: Rect2 = item.get_rect()
+		var region: Rect2 = item.region_rect if item.region_enabled else Rect2(Vector2.ZERO, tex.get_size())
+		# 조각 로컬 → 그림 픽셀
+		var to_px := func(p: Vector2) -> Vector2:
+			var q: Vector2 = (p - rect.position) / rect.size * region.size
+			if item.flip_h:
+				q.x = region.size.x - q.x
+			if item.flip_v:
+				q.y = region.size.y - q.y
+			return q + region.position
+		var g: Vector2 = to_px.call(grip)
+		var t: Vector2 = to_px.call(tip)
+		var axis: Vector2 = t - g
+		var len2: float = maxf(axis.length_squared(), 1.0)
+		var sums: Array[Color] = []
+		var counts: Array[int] = []
+		for i in count:
+			sums.append(Color(0, 0, 0, 0))
+			counts.append(0)
+		var dark_sum := Color(0, 0, 0, 0)
+		var dark_n: int = 0
+		const STEP := 3
+		for y in range(int(region.position.y), int(region.end.y), STEP):
+			for x in range(int(region.position.x), int(region.end.x), STEP):
+				var c: Color = img.get_pixel(x, y)
+				if c.a < 0.5:
+					continue
+				if c.get_luminance() < 0.12:
+					dark_sum += c
+					dark_n += 1
+					continue
+				var f: float = clampf((Vector2(x, y) - g).dot(axis) / len2, 0.0, 0.999)
+				var b: int = int(f * count)
+				sums[b] += c
+				counts[b] += 1
+		for i in count:
+			if counts[i] > 0:
+				var s: Color = sums[i] / float(counts[i])
+				bands[i] = Color(s.r, s.g, s.b, 1.0)
+		# 빈 줄은 가까운 채워진 줄 색으로
+		for i in count:
+			if counts[i] > 0:
+				continue
+			for d in range(1, count):
+				if i - d >= 0 and counts[i - d] > 0:
+					bands[i] = bands[i - d]
+					break
+				if i + d < count and counts[i + d] > 0:
+					bands[i] = bands[i + d]
+					break
+		if dark_n > 0:
+			var o: Color = dark_sum / float(dark_n)
+			outline = Color(o.r, o.g, o.b, 1.0)
+	var result: Array = [bands, outline]
+	_smear_color_cache[key] = result
+	return result
+
+## 스미어 색을 진하게 — 채도는 weapon_smear_saturation배, 밝기는 weapon_smear_value배(캐시된 원본은 안 건드린다)
+func _deepen_smear_colors(src: PackedColorArray) -> PackedColorArray:
+	var out := PackedColorArray()
+	for c in src:
+		out.append(Color.from_hsv(c.h, clampf(c.s * weapon_smear_saturation, 0.0, 1.0), clampf(c.v * weapon_smear_value, 0.0, 1.0), c.a))
+	return out
 
 ## 지금 띠를 놓는다 — 띠는 남은 꼬리가 사라질 때까지 맵에 남았다가 스스로 지워진다
 func _end_swing_trail() -> void:
@@ -2721,7 +3060,7 @@ func _end_swing_trail() -> void:
 func _attack_variant_params() -> Dictionary:
 	# 베기(경관봉 난무)는 제일 먼저 가로챈다 — 잽·어퍼컷 같은 맨손 규칙을 타면 안 된다
 	if _attack_variant >= SLASH_VARIANT_BASE:
-		var sl: Dictionary = SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+		var sl: Dictionary = _slash_entry()
 		return {
 			"raise_deg": sl["raise_deg"],
 			"swing_deg": sl["swing_deg"],
@@ -3076,9 +3415,19 @@ func play_keyboard_fan(duration: float) -> void:
 		_hand_r.z_index = attack_grip_hand_z
 	if _hand_l:
 		_hand_l.z_index = attack_grip_hand_z
+	if fan_trail and _fan_time > 0.0 and _hand_r_hold:
+		if _fan_trail_node == null:
+			# 키보드(HandRHold) 바로 앞 순서·같은 z — 호가 몸 위, 키보드 밑에 깔린다. owner 없음 = 씬에 저장 안 됨
+			_fan_trail_node = SPIN_ARC_TRAIL_SCRIPT.new()
+			add_child(_fan_trail_node)
+			move_child(_fan_trail_node, _hand_r_hold.get_index())
+		_fan_trail_node.z_index = _hand_r_hold.z_index
+		_fan_trail_node.set_active(true)
 
 func end_keyboard_fan() -> void:
 	_fan_time = 0.0
+	if _fan_trail_node:
+		_fan_trail_node.set_active(false)
 	# 회전 때문에 (0,0)으로 옮기고 키운 무기를 원래 자리·크기로 되돌린다
 	for child in _fan_child_rest:
 		if is_instance_valid(child):
@@ -3119,6 +3468,31 @@ func _update_fan_ghosts(delta: float) -> void:
 	for child in _hand_r_hold.get_children():
 		if child is Sprite2D and child.visible:
 			_spawn_fan_ghost(child)
+	_update_fan_trail()
+
+## 회전 호 트레일에 이번 프레임 무기 끝 자리를 넘긴다(리그 로컬). 무기 그림의 긴 쪽 양 끝 중 축에서 먼 쪽을 끝으로 본다 —
+## 그림 offset·회전이 어떻든 실제로 보이는 끝을 따라간다
+func _update_fan_trail() -> void:
+	if _fan_trail_node == null:
+		return
+	var center: Vector2 = _hand_r_hold.position
+	var best: Vector2 = center
+	var best_d: float = 0.0
+	for child in _hand_r_hold.get_children():
+		if not (child is Sprite2D and child.visible):
+			continue
+		var rect: Rect2 = child.get_rect()
+		var mid_y: float = rect.get_center().y
+		for x in [rect.position.x, rect.end.x]:
+			var tip: Vector2 = _hand_r_hold.transform * (child.transform * Vector2(x, mid_y))
+			if tip.distance_to(center) > best_d:
+				best = tip
+				best_d = tip.distance_to(center)
+	if best_d <= 1.0:
+		return
+	_fan_trail_node.center = center
+	_fan_trail_node.angle = (best - center).angle()
+	_fan_trail_node.radius = best.distance_to(center)
 
 func _spawn_fan_ghost(src: Sprite2D) -> void:
 	if _fan_ghosts.is_empty():
@@ -4074,7 +4448,7 @@ func _pose_eat() -> void:
 ## 베기 한 번 동안 상체·고개가 따라 넘어간다 — 감을 땐 뒤로 젖혔다가 후릴 때 확 넘어가고 천천히 돌아온다.
 ## 손 궤도(`_pose_attack_hand`)와 **같은 구간 비율**(40% / 62%)을 쓰므로 둘이 따로 놀지 않는다
 func _pose_slash_lean() -> void:
-	var sl: Dictionary = SLASHES[(_attack_variant - SLASH_VARIANT_BASE) % SLASHES.size()]
+	var sl: Dictionary = _slash_entry()
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
 	var t: float
 	if progress < ATTACK_STRIKE_START:
@@ -4097,6 +4471,11 @@ func _pose_slash_lean() -> void:
 		_body.rotation += lean
 	if _head:
 		_head.rotation += lean * 0.6
+	# 공중 큰 휘두르기는 반대 손도 움직인다 — 감을 땐(t < 0) 앞으로 반쯤, 올려칠 땐 뒤 아래로 당긴다(균형 잡기).
+	# 로컬 좌표라 facing 부호는 안 곱한다
+	if _attack_variant == AIR_SWING_VARIANT and _hand_l:
+		_hand_l.position += air_swing_off_hand * t
+		_hand_l.rotation += deg_to_rad(air_swing_off_hand_deg) * t
 
 func _pose_uppercut_lean() -> void:
 	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
@@ -4370,22 +4749,41 @@ func _has_action_turn_set() -> bool:
 func _use_action_turn_set() -> bool:
 	return _action_face_on and _has_action_turn_set()
 
+## 술 머금은 얼굴 전용 머리 돌리기 세트가 다 채워져 있는지
+func _has_drunk_turn_set() -> bool:
+	var count: int = drunk_head_turn_textures.size()
+	return drunk_head_texture != null and count >= 1 and drunk_head_turn_anchors.size() >= count + 1 and drunk_head_turn_faces_left.size() >= count + 1
+
+## 지금 술 머금은 세트를 쓸 때인지 — 술 머금은 얼굴이고, 액션 세트가 안 쓰이고, 세트가 있으면
+func _use_drunk_turn_set() -> bool:
+	return _drunk_head_on and not _use_action_turn_set() and _has_drunk_turn_set()
+
 func _turn_textures() -> Array[Texture2D]:
-	return action_head_turn_textures if _use_action_turn_set() else head_turn_textures
+	if _use_action_turn_set():
+		return action_head_turn_textures
+	return drunk_head_turn_textures if _use_drunk_turn_set() else head_turn_textures
 
 func _turn_anchors() -> Array[Vector3]:
-	return action_head_turn_anchors if _use_action_turn_set() else head_turn_anchors
+	if _use_action_turn_set():
+		return action_head_turn_anchors
+	return drunk_head_turn_anchors if _use_drunk_turn_set() else head_turn_anchors
 
 func _turn_faces_left() -> Array[bool]:
-	return action_head_turn_faces_left if _use_action_turn_set() else head_turn_faces_left
+	if _use_action_turn_set():
+		return action_head_turn_faces_left
+	return drunk_head_turn_faces_left if _use_drunk_turn_set() else head_turn_faces_left
 
 ## 돌기 전 옆모습(0번) 그림과 그 배율 — 액션 표정 세트면 액션 표정 그림
 func _turn_rest_texture() -> Texture2D:
-	return action_head_texture if _use_action_turn_set() else _head_rest_texture
+	if _use_action_turn_set():
+		return action_head_texture
+	return drunk_head_texture if _use_drunk_turn_set() else _head_rest_texture
 
 func _turn_rest_scale() -> Vector2:
 	if _use_action_turn_set() and action_head_scale != Vector2.ZERO:
 		return action_head_scale
+	if _use_drunk_turn_set() and drunk_head_scale != Vector2.ZERO:
+		return drunk_head_scale
 	return _head_rest_scale
 
 ## 평소 얼굴이거나 머리 돌리기용 그림(측면·정면·뒤통수)인지 — 이 밖의 그림이면 다른 표정이 들어온 것이다.
@@ -4394,6 +4792,8 @@ func _is_turn_texture(tex: Texture2D) -> bool:
 	if tex == null:
 		return false
 	if tex == _head_rest_texture or head_turn_textures.has(tex) or tex == head_back_texture:
+		return true
+	if _has_drunk_turn_set() and (tex == drunk_head_texture or drunk_head_turn_textures.has(tex)):
 		return true
 	return _has_action_turn_set() and (tex == action_head_texture or action_head_turn_textures.has(tex))
 
@@ -4439,6 +4839,21 @@ func _set_body_frame(head_frame: int, dir: float) -> void:
 	_body.texture = tex
 	_body.scale = Vector2(sx * k * flip, sy * k)
 	_body.position += Vector2((rest_anchor.x - here.x * k * flip) * sx, (rest_anchor.y - here.y * k) * sy)
+	_turn_applied = true
+
+## 아무 몸통 그림이나 원래 몸통 자리에 끼운다 — 불투명 높이를 원래 몸통에 맞추고 바닥 가운데를 맞춘다(뒤집지 않음).
+## _set_body_frame과 같은 계산이다(뒷모습처럼 돌리기 세트 밖의 그림용)
+func _set_body_image(tex: Texture2D) -> void:
+	if _body == null or tex == null or _body_rest_texture == null:
+		return
+	var sx: float = absf(_body_rest_scale.x)
+	var sy: float = _body_rest_scale.y
+	var rest_anchor: Vector2 = _body_anchor_of(_body_rest_texture)
+	var here: Vector2 = _body_anchor_of(tex)
+	var k: float = _body_height_of(_body_rest_texture) / maxf(_body_height_of(tex), 1.0)
+	_body.texture = tex
+	_body.scale = Vector2(sx * k, sy * k)
+	_body.position += Vector2((rest_anchor.x - here.x * k) * sx, (rest_anchor.y - here.y * k) * sy)
 	_turn_applied = true
 
 ## 몸통 그림의 "바닥 가운데"(불투명 영역 가로 가운데·맨 아래)가 캔버스 가운데에서 얼마나 떨어졌는지 — 그림마다 한 번만 잰다
@@ -6522,6 +6937,10 @@ func _sync_foot_marks() -> void:
 ## 2P가 쓸 **몸통 돌리기** 그림들 — 비워 두면 머리를 돌리는 동안만 원래 색이 보인다.
 ## `body_turn_textures`와 장수를 맞춰 넣을 것
 @export var p2_body_turn_textures: Array[Texture2D] = []
+## 2P가 쓸 **몸 뒷모습**(점프 공격으로 돌 때) — 비워 두면 평소 뒷모습
+@export var p2_body_back_texture: Texture2D
+## 2P가 쓸 **발** 그림(두 발 같이) — 비워 두면 평소 발
+@export var p2_foot_texture: Texture2D
 
 ## 지금 2P 색인지
 var _is_player_two: bool = false
@@ -6531,7 +6950,19 @@ var _is_player_two: bool = false
 ## 안 그러면 한 걸음 걷는 순간 원래 색으로 되돌아간다
 func set_player_two(on: bool) -> void:
 	_is_player_two = on
-	if not on or p2_body_texture == null:
+	if not on:
+		return
+	# 발·뒷모습은 몸통 색 그림이 없어도 따로 갈아입는다
+	if p2_body_back_texture != null:
+		body_back_texture = p2_body_back_texture
+	elif p2_body_texture != null:
+		# 몸통만 2P 색이고 뒷모습 2P가 없으면 1P 색 등이 튀어나오지 않게 뒷모습 몸통을 끈다
+		body_back_texture = null
+	if p2_foot_texture != null:
+		for foot in [_foot_l, _foot_r]:
+			if foot:
+				foot.texture = p2_foot_texture
+	if p2_body_texture == null:
 		return
 	_body_rest_texture = p2_body_texture
 	if _body:

@@ -34,6 +34,8 @@ const FLAME_PARTS: Array[String] = ["FlameL", "FlameR"]
 @export var car_texture: Texture2D
 ## 캐릭터별 로켓 신발 그림 {캐릭터 이름: Texture2D}. 없는 캐릭터는 원래 발 그림에 불꽃만 붙는다
 @export var rocket_shoes: Dictionary = {}
+## 2P 색 로켓 신발 {캐릭터 이름: Texture2D} — 같은 캐릭터끼리 붙어 2P 색을 입었을 때 쓴다(2026-10-10). 없으면 평소 신발
+@export var rocket_shoes_p2: Dictionary = {}
 ## 고쳐 둔 자리들 {"캐릭터|단계": {조각 이름: [위치, 각도, 크기]}} — 편집 씬이 채운다
 @export var entries: Dictionary = {}
 
@@ -65,7 +67,9 @@ func stage_of(stack: int) -> String:
 	return STAGE_NONE
 
 ## 그 단계의 장비 그림. 로켓인데 그 캐릭터 신발 그림이 없으면 null(원래 발을 그대로 쓴다)
-func gear_texture(character: String, stage: String) -> Texture2D:
+func gear_texture(character: String, stage: String, p2: bool = false) -> Texture2D:
+	if p2 and stage == STAGE_ROCKET and rocket_shoes_p2.has(character):
+		return rocket_shoes_p2[character] as Texture2D
 	match stage:
 		STAGE_BIKE:
 			return bike_texture

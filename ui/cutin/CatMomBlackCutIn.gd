@@ -15,8 +15,21 @@ extends Node2D
 
 const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 
+## 종류별 그림의 실제 보이는 영역(알파 0.5 넘는 곳, 2026-10-11 실측) — 그림을 바꾸면 다시 잴 것.
+## 씬은 검은 고양이로 맞춰져 있고, 다른 고양이는 이 영역끼리 **높이·가운데를 맞춰** 갈아 끼운다
+const CAT_HEAD_RECTS: Array = [Rect2(293, 92, 860, 939), Rect2(101, 85, 1053, 1059), Rect2(170, 141, 954, 968)]
+const CAT_TEXTURES: Array = [
+	["검은 고양이 머리.png", "검은 고양이 몸.png", "검은 고양이 발.png"],
+	["주황색 고양이머리.png", "주황색 고양이몸.png", "주황색 고양이 발.png"],
+	["하양 고양이 머리.png", "하양고양이 몸.png", "하양 고야이 발.png"],
+]
+## 주황·흰 발은 검은 발보다 몇 px 넓어서 씬의 잘라 쓰는 영역을 조금 넓힌다
+const OTHER_PAW_REGION := Rect2(227, 333, 910, 433)
+
 ## 이 컷인이 화면에 머무는 시간(초). UltimateCutIn이 이 값을 읽어 간다
 @export var cutin_duration: float = 3.8
+## 어느 고양이로 그릴지(0 검은 / 1 주황 / 2 흰) — 주황·흰 컷인 씬은 이 값만 바꿔 이 씬을 상속한다
+@export_enum("검은", "주황", "흰") var cat_kind: int = 0
 
 @export_group("1. 걸어오는 할머니")
 ## 나타나기 시작하는 시각과, 완전히 불투명해질 때까지 걸리는 시간(초)
@@ -35,10 +48,14 @@ const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 @export_group("2. 검은 고양이 윙크")
 ## 칸이 나타나는 시각(초)
 @export var cat_panel_at: float = 1.3
-## 얼굴이 커지기 시작하는 시각과 걸리는 시간(초), 최종 배율
+## 칸 안을 확대(카메라가 다가가듯 머리·몸 통째로, 얼굴 가운데 기준)하기 시작하는 시각과 걸리는 시간(초), 최종 배율.
+## 점무늬 바탕은 칸 종이라 그대로 둔다
 @export var cat_zoom_at: float = 1.5
 @export var cat_zoom_time: float = 0.3
 @export var cat_zoom: float = 1.5
+## 확대하면서 같이 기울이는 각도(도, 음수 = 반시계)와 옮기는 거리(px) — 커진 머리가 칸 아래 사선에 안 잘리게
+@export var cat_zoom_tilt_deg: float = -15.0
+@export var cat_zoom_shift: Vector2 = Vector2(-60.0, 0.0)
 ## 윙크 시작 시각과 감고 있는 시간(초)
 @export var wink_at: float = 1.9
 @export var wink_hold: float = 0.28
@@ -70,6 +87,12 @@ const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 @export var tail_wave_speed: float = 9.0
 @export var tail_points: int = 14
 
+@export_group("안긴 고양이 다리")
+## 안긴 고양이 다리가 대롱대롱 흔들리는 각도(도)와 빠르기 — 다리마다 박자를 조금씩 어긋나게 한다(2026-10-10 사용자: "검은 고양이에 자연스럽게 다리")
+@export var leg_swing_deg: float = 9.0
+@export var leg_swing_speed: float = 5.5
+@export var leg_pull_deg: float = 22.0
+
 @onready var _walk_content: Node2D = $PanelWalk/Content
 @onready var _walker: Node2D = $PanelWalk/Content/Walker
 @onready var _glint: Node2D = $PanelWalk/Content/Walker/Head/LensGlint
@@ -83,13 +106,13 @@ const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 @onready var _hand: Sprite2D = $PanelHold/Content/HandL
 @onready var _cat_body: Sprite2D = $PanelHold/Content/CatBody
 @onready var _cat_held_head: Sprite2D = $PanelHold/Content/CatHead
+@onready var _cat_legs: Node2D = $PanelHold/Content/CatBody/Legs
 
 var _time: float = 0.0
 var _playing: bool = false
 var _glinted: bool = false
 var _walker_rest: Vector2
 var _walker_scale: Vector2
-var _cat_head_scale: Vector2
 var _hand_rest: Vector2
 var _cat_body_rest: Vector2
 var _cat_held_head_rest: Vector2
@@ -99,17 +122,18 @@ var _grab_target: Vector2
 var _grab_target_set: bool = false
 
 func _ready() -> void:
+	# 자리를 기억하기 전에 고양이 그림부터 갈아 끼운다(머리 자리가 바뀌므로)
+	_apply_cat_kind()
 	_walker_rest = _walker.position
 	_walker_scale = _walker.scale
-	_cat_head_scale = _cat_head.scale
 	_hand_rest = _hand.position
 	_cat_body_rest = _cat_body.position
 	_cat_held_head_rest = _cat_held_head.position
 	_hold_panel_rest = _hold_panel.position
 	# 꼬리 그림은 게임 속 고양이와 같은 것(투명 여백을 잘라낸 판)을 Line2D에 늘려 붙인다
-	_tail.texture = CAT_SPRITE.cropped_of(0, "tail")
+	_tail.texture = CAT_SPRITE.cropped_of(cat_kind, "tail")
 	_tail.texture_mode = Line2D.LINE_TEXTURE_STRETCH
-	var box: Rect2 = CAT_SPRITE.bbox_of(0, "tail")
+	var box: Rect2 = CAT_SPRITE.bbox_of(cat_kind, "tail")
 	_tail.width = tail_length * box.size.y / maxf(box.size.x, 1.0)
 	# 윙크 눈꺼풀은 리그 머리가 아니라 그냥 스프라이트에 붙어 있다
 	_wink.needs_rig = false
@@ -118,6 +142,44 @@ func _ready() -> void:
 	if get_parent() == get_tree().root:
 		position = get_viewport().get_visible_rect().size * 0.5
 		play()
+
+## 주황·흰 고양이면 머리·몸·발 그림과 윙크 눈 자리를 그 고양이 것으로 바꾼다. 검은이면 씬 그대로
+func _apply_cat_kind() -> void:
+	if cat_kind == 0:
+		return
+	var dir: String = CAT_SPRITE.DIR
+	var files: Array = CAT_TEXTURES[cat_kind]
+	var head_tex: Texture2D = load(dir + files[0])
+	for head: Sprite2D in [_cat_head, _cat_held_head]:
+		_swap_head(head, head_tex)
+	var body_tex: Texture2D = load(dir + files[1])
+	_cat_body.texture = body_tex
+	($PanelCat/Content/CatBody as Sprite2D).texture = body_tex
+	var paw_tex: Texture2D = load(dir + files[2])
+	for leg: Node in _cat_legs.get_children():
+		var paw: Sprite2D = leg.get_node_or_null("Paw")
+		if paw:
+			paw.texture = paw_tex
+			paw.region_rect = OTHER_PAW_REGION
+	# 윙크 눈꺼풀 — 눈 자리(머리 그림 픽셀)·크기·털색은 게임 속 고양이와 같은 표(`CatSprite.EYES`)
+	var eye: Array = CAT_SPRITE.EYES[cat_kind]
+	_wink.position = eye[0] - head_tex.get_size() * 0.5
+	_wink.eye_size = eye[1]
+	_wink.skin_color = eye[2]
+	# 눈꺼풀은 _ready에서 "평소 머리 그림"과 털색을 기억한다 — 머리를 바꿨으니 다시 기억시킨다
+	# (안 하면 표정이 바뀐 걸로 보고 눈을 안 감는다)
+	_wink._ready()
+
+## 머리 그림을 갈아 끼우되 화면에서 보이는 높이·가운데는 검은 고양이 때와 같게 한다
+func _swap_head(head: Sprite2D, tex: Texture2D) -> void:
+	var old_rect: Rect2 = CAT_HEAD_RECTS[0]
+	var new_rect: Rect2 = CAT_HEAD_RECTS[cat_kind]
+	var old_offset: Vector2 = old_rect.get_center() - head.texture.get_size() * 0.5
+	var seen_center: Vector2 = head.position + (old_offset * head.scale).rotated(head.rotation)
+	head.scale *= old_rect.size.y / new_rect.size.y
+	head.texture = tex
+	var new_offset: Vector2 = new_rect.get_center() - tex.get_size() * 0.5
+	head.position = seen_center - (new_offset * head.scale).rotated(head.rotation)
 
 ## 컷인 재생을 시작한다(UltimateCutIn이 부른다). 에디터 화면에서는 씬에 놓인 그대로(세 칸 다 찬 모습) 보인다
 func play() -> void:
@@ -173,7 +235,14 @@ func _apply_cat(t: float) -> void:
 	# 살짝 넘쳤다가 돌아오는 커짐(back ease) — "툭" 다가오는 느낌
 	var c: float = 1.70158
 	var back: float = 1.0 + (c + 1.0) * pow(k - 1.0, 3.0) + c * pow(k - 1.0, 2.0)
-	_cat_head.scale = _cat_head_scale * lerpf(1.0, cat_zoom, back)
+	# 머리만 키우지 않고 칸 안(Content)을 통째로 확대한다 — 얼굴 자리는 제자리에 두고 주변이 밀려난다
+	var s: float = lerpf(1.0, cat_zoom, back)
+	# 기울기·옮김도 같은 박자로 — 커지면서 고개를 갸웃해 머리 전체가 칸 안에 들어온다
+	var pivot: Vector2 = _cat_head.position
+	var tilt: float = deg_to_rad(cat_zoom_tilt_deg) * back
+	_cat_content.scale = Vector2(s, s)
+	_cat_content.rotation = tilt
+	_cat_content.position = pivot - (pivot * s).rotated(tilt) + cat_zoom_shift * back
 	_wink.held_closed = t >= wink_at and t < wink_at + wink_hold
 
 # --- 3. 꼬리 잡아 당기기 ---
@@ -202,6 +271,7 @@ func _apply_hold(t: float) -> void:
 	var drag: Vector2 = pull_offset * pull_eased * pull_drag
 	_cat_body.position = _cat_body_rest + drag
 	_cat_held_head.position = _cat_held_head_rest + drag
+	_swing_legs(local, pull_eased)
 	# 꼬리: 잡히기 전엔 살랑, 손이 닿는 동안 꼬리 끝이 손으로 끌려가 팽팽해진다
 	var hold_blend: float = 0.0
 	if _grab_target_set:
@@ -214,6 +284,16 @@ func _apply_hold(t: float) -> void:
 		_hold_panel.position = _hold_panel_rest + Vector2(sin(since_rack * 90.0), cos(since_rack * 70.0)) * s
 	else:
 		_hold_panel.position = _hold_panel_rest
+
+## 안긴 고양이 다리 — 대롱대롱 흔들리다가, 꼬리를 당기는 순간 뒤로(손 쪽으로) 확 쏠린다
+func _swing_legs(local: float, pull: float) -> void:
+	if _cat_legs == null:
+		return
+	var i: int = 0
+	for leg in _cat_legs.get_children():
+		var sway: float = sin(local * leg_swing_speed + float(i) * 1.7) * leg_swing_deg
+		(leg as Node2D).rotation = deg_to_rad(sway + leg_pull_deg * pull)
+		i += 1
 
 ## 살랑대는 꼬리의 점 하나(t: 0 뿌리 ~ 1 끝)
 func _free_tail_point(local: float, t: float, root: Vector2) -> Vector2:

@@ -27,6 +27,14 @@ extends Control
 ## 보여줘서 인물 그림이면 얼굴이 잘려 나간다(2026-10-11 경찰 그림에서 겪음)
 @export var pan_at: float = 0.0
 @export var pan_time: float = 2.2
+## **그림 전체가 들어오게 높이에 맞춘다** — 좌우에 여백이 생기는 대신 **아무것도 안 잘린다**
+## (2026-10-11 사용자: 지하철 들어오는 장면이 "이상하게 클로즈업" 되어 있다).
+## 세로로 긴 인물 그림을 폭에 맞추면 1.7배쯤 확대돼서 머리나 발이 화면 밖으로 나간다.
+## 켜면 훑을 여지가 없으므로 `pan_time`은 무시된다
+@export var fit_height: bool = false:
+	set(value):
+		fit_height = value
+		_lay_out()
 ## 그림을 화면 폭보다 얼마나 더 키울지(1이면 폭에 딱 맞춘다).
 ## 1보다 크게 주면 좌우가 조금 잘리는 대신 인물이 커진다
 @export var zoom: float = 1.0:
@@ -77,8 +85,16 @@ func _lay_out() -> void:
 		return
 	_image.texture = texture
 	var view: Vector2 = _screen()
-	var width: float = view.x * maxf(zoom, 0.01)
-	var height: float = width * texture.get_size().y / maxf(texture.get_size().x, 1.0)
+	var size: Vector2 = texture.get_size()
+	var width: float
+	var height: float
+	if fit_height:
+		# 높이에 맞춘다 — 그림이 통째로 들어오고 좌우가 빈다
+		height = view.y * maxf(zoom, 0.01)
+		width = height * size.x / maxf(size.y, 1.0)
+	else:
+		width = view.x * maxf(zoom, 0.01)
+		height = width * size.y / maxf(size.x, 1.0)
 	_image.size = Vector2(width, height)
 	_image.position.x = (view.x - width) * 0.5
 	_apply(1.0 if (Engine.is_editor_hint() and preview_end) else 0.0)
@@ -101,6 +117,10 @@ func _slack() -> float:
 ## u가 0이면 시작 자리, 1이면 끝 자리
 func _apply(u: float) -> void:
 	if _image == null or not is_instance_valid(_image):
+		return
+	if fit_height:
+		# 통째로 들어오는 모드는 훑을 데가 없다 — 세로 가운데에 세워 둔다
+		_image.position.y = (_screen().y - _image.size.y) * 0.5
 		return
 	var slack: float = _slack()
 	# 아래에서 위로 = 그림을 위로 당긴다(y가 -slack에서 0으로)

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://ui/cutin/CatMomBlackCutIn.tscn" id="1_base"]
+
+[node name="CatMomOrangeCutIn" instance=ExtResource("1_base")]
+cat_kind = 1

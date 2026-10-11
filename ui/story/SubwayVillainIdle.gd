@@ -55,6 +55,33 @@ const CANVAS := Vector2(1140.0, 1380.0)
 		zoom = maxf(value, 0.05)
 		_reframe()
 
+@export_group("조각 갈아끼우기")
+## **배경을 다른 그림으로 바꾼다**(2026-10-11). 비워 두면 원래 `_0005_Background`를 쓰는데,
+## 그건 "배경만"이 아니라 **배경 + 인물 합본**이라 위에 올린 조각이 크게 움직이면
+## 아래 원본 팔·다리가 드러난다. 인물을 지운 "좌석만" 그림을 여기 넣으면 그 문제가 없어진다
+@export var background_texture: Texture2D = null:
+	set(value):
+		background_texture = value
+		_swap_texture("Background", value, LAYERS[0][1])
+## **다리 조각**(선택). 쪼개 둔 여섯 장에는 상반신만 있고 다리는 배경에만 그려져 있다 —
+## 배경을 좌석만 있는 그림으로 바꾸려면 다리를 따로 받아야 한다. 배경 바로 위에 깔린다
+@export var legs_texture: Texture2D = null:
+	set(value):
+		legs_texture = value
+		_apply_legs()
+
+@export_group("카메라 훑기")
+## **아래에서 위로 천천히 훑는다**(2026-10-11 사용자 구상: "아래서부터 위로 보여줌").
+## 움직이는 건 `focus_y` 하나뿐이라 **숨쉬기·단소 쾅쾅·흔들림은 그대로 돈다** — 그림을 통째로
+## 미는 게 아니라 "어디를 보고 있는지"만 바꾸는 것이다.
+## 0이면 안 훑고 `focus_y` 자리에 가만히 있는다
+@export var pan_time: float = 0.0
+## 훑기 시작할 때 화면 한가운데에 올 원본 y(px). 큰 값일수록 아래(발·단소 끝)를 본다.
+## 끝나는 자리는 위의 `focus_y`다
+@export var pan_from_y: float = 1060.0
+## 훑기를 시작하기까지 기다리는 시간(초)
+@export var pan_delay: float = 0.0
+
 @export_group("숨쉬기")
 ## 한 번 숨쉬는 데 걸리는 시간(초)
 @export var breath_cycle: float = 3.4
@@ -107,6 +134,8 @@ var _frame: Node2D = null
 var _parts: Dictionary = {}
 ## 흐른 시간(초)
 var _time: float = 0.0
+## 훑는 중 지금 보고 있는 원본 y. -1이면 아직 안 훑었다는 뜻이라 `focus_y`를 그대로 쓴다
+var _pan_y: float = -1.0
 ## 내리친 뒤 남은 흔들림 시간
 var _shake_left: float = 0.0
 ## 직전 프레임의 내리치기 진행도 — 0으로 넘어가는 순간이 "친 순간"이다
@@ -138,6 +167,36 @@ func _build() -> void:
 	_set_pivot("ChinArm", chin_pivot)
 	_set_pivot("Head", head_pivot)
 	_set_pivot("Hair", hair_pivot)
+	# 인스펙터에서 갈아 끼운 그림이 있으면 지금 반영한다(setter는 _build 전에 돌 수 있다)
+	_swap_texture("Background", background_texture, LAYERS[0][1])
+	_apply_legs()
+
+## 조각 하나의 그림을 바꾼다. `value`가 비면 원래 파일로 되돌린다
+func _swap_texture(part_name: String, value: Texture2D, fallback_file: String) -> void:
+	var sprite: Sprite2D = _parts.get(part_name)
+	if sprite == null:
+		return
+	sprite.texture = value if value != null else load(DIR + fallback_file)
+
+## 다리 조각을 **배경 바로 위**(= 몸통보다 뒤)에 깐다. 앉아 있는 다리는 안 움직이므로
+## 축도 안 잡는다 — 숨쉬기로 몸통이 늘어도 다리는 제자리에 있는 게 맞다
+func _apply_legs() -> void:
+	if _frame == null or not is_instance_valid(_frame):
+		return
+	var legs: Sprite2D = _parts.get("Legs")
+	if legs_texture == null:
+		if legs != null and is_instance_valid(legs):
+			legs.queue_free()
+			_parts.erase("Legs")
+		return
+	if legs == null or not is_instance_valid(legs):
+		legs = Sprite2D.new()
+		legs.name = "Legs"
+		legs.centered = false
+		_frame.add_child(legs)
+		_frame.move_child(legs, 1)   # Background(0) 바로 뒤
+		_parts["Legs"] = legs
+	legs.texture = legs_texture
 
 ## 그 조각이 **그 점을 중심으로** 돌고 커지게 만든다
 func _set_pivot(part_name: String, pivot: Vector2) -> void:
@@ -160,14 +219,27 @@ func _reframe() -> void:
 	k *= zoom
 	_frame.scale = Vector2(k, k)
 	# 보고 싶은 점(focus)이 화면 한가운데 오게 민다
-	_frame.position = view * 0.5 - Vector2(focus_x, focus_y) * k
+	# 훑는 중이면 그 자리를, 아니면 인스펙터에 적힌 focus_y를 본다
+	var look_y: float = _pan_y if pan_time > 0.0 and _pan_y >= 0.0 else focus_y
+	_frame.position = view * 0.5 - Vector2(focus_x, look_y) * k
 
 func _process(delta: float) -> void:
 	_time += delta
+	_pan()
 	_breathe()
 	_bang(delta)
 	_sway()
 	_shake(delta)
+
+## 보는 자리를 `pan_from_y`에서 `focus_y`로 천천히 옮긴다.
+## **`focus_y` 자체는 안 건드린다** — 그걸 바꾸면 setter가 돌면서 인스펙터 값이 덮어써진다
+func _pan() -> void:
+	if pan_time <= 0.0:
+		return
+	var t: float = clampf((_time - pan_delay) / pan_time, 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)   # 천천히 시작해 천천히 멈춘다
+	_pan_y = lerpf(pan_from_y, focus_y, t)
+	_reframe()
 
 ## 몸통 숨쉬기 — 허리를 축으로 세로만 늘었다 줄었다
 func _breathe() -> void:

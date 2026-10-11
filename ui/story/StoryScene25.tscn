@@ -41,6 +41,7 @@ script = ExtResource("9_pan")
 texture = ExtResource("2_up")
 from_bottom = false
 pan_time = 0.0
+fit_height = true
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

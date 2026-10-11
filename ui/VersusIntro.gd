@@ -34,6 +34,7 @@ const VERSUS_POSES := {
 	"주인공": "res://ui/versus/PoliceVersusPose.tscn",
 	"금쪽이": "res://ui/versus/ChokbeopsonyeonVersusPose.tscn",
 	"악플러": "res://ui/versus/AkpeulleoVersusPose.tscn",
+	"지하철 아저씨": "res://ui/versus/SubwayVillainVersusPose.tscn",
 }
 ## **상대가 누구냐에 따라 달라지는 포즈.** 열쇠는 `"내 이름|상대 이름"`이고,
 ## 여기 맞는 게 있으면 위 VERSUS_POSES보다 **먼저** 쓴다.

@@ -287,6 +287,10 @@ var _air_used: bool = false
 var _air_now: bool = false
 ## 공중 휘두르기 동안 갈아 끼운 반원 판정 — 끝나면 원래 판정(_air_saved_shape)으로 되돌린다
 var _air_saved_shape: Shape2D = null
+## 마무리를 공중 휘두르기 모션으로 치는 중(final_air_motion) — 판정도 모션에 맞춘 반원으로 바꿔 끼운다
+var _final_air_now: bool = false
+## 원래 땅 판정의 앞 끝(range + 반폭). 판정 모양을 바꿔 끼우기 전에 한 번 재 둔다
+var _ground_reach: float = -1.0
 ## 이번 스윙이 건물만 맞혔는지 — 판정 창이 끝날 때 "건물 명중"으로 정리한다(그 사이 적이 맞으면 적이 우선)
 var _building_pending: bool = false
 ## 이어서 건물을 친 횟수 — BUILDING_HIT_LIMIT에 닿으면 마무리 쿨
@@ -692,6 +696,8 @@ func _process(delta: float) -> void:
 			hitbox.global_position = _fighter.global_position + Vector2(range * _fighter.facing, 0.0)
 			if _air_now:
 				hitbox.global_position = _fighter.global_position + Vector2(air_swing_center.x * _fighter.facing, air_swing_center.y)
+			elif _final_air_now:
+				hitbox.global_position = _fighter.global_position
 		_active_left = maxf(_active_left - delta, 0.0)
 		if _active_left <= 0.0 and _swinging and not _resolved:
 			if _building_pending:
@@ -847,7 +853,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		var fin_len: float = _final_swing_duration(step, visual)
 		if fin_len <= 0.0:
 			fin_len = float(visual.get("attack_duration"))
-		visual.play_air_swing(fin_len, Vector2.ZERO, range + _hit_half_width())
+		visual.play_air_swing(fin_len, Vector2.ZERO, _final_air_reach())
 		if visual.has_method("play_swing_trail"):
 			visual.play_swing_trail()
 	elif visual and visual.has_method("play_attack_swing"):
@@ -963,6 +969,8 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
 	if _air_now:
 		_start_air_shape(fighter)
+	elif final_air_motion and is_final and _hit_data(step) == null:
+		_start_final_air_shape(fighter)
 	# **부가 장치가 이 타를 가져갔으면 몸 판정은 안 켠다** — 날아간 물건이 대신 때린다
 	# (지하철 아저씨: 1타에 리코더를 던지고, 3타에 돌아오는 길이 판정이 된다).
 	# 피해·넉백·띄우기는 위에서 히트박스에 다 넣어 뒀고, 날아가는 물건이 그걸 그대로 베껴 간다
@@ -1349,6 +1357,25 @@ func _hit_half_width() -> float:
 		return (shape_node.shape as CircleShape2D).radius * absf(shape_node.scale.x)
 	return 15.0
 
+## 마무리 공중 휘두르기 모션의 판정 반지름 = 원래 땅 판정의 앞 끝. 모양을 바꿔 끼우기 전에 재 둔 값을 쓴다
+func _final_air_reach() -> float:
+	if _ground_reach < 0.0 and _air_saved_shape == null:
+		_ground_reach = range + _hit_half_width()
+	return _ground_reach if _ground_reach > 0.0 else range + 15.0
+
+## 마무리를 공중 휘두르기 모션(머리 위까지 올려치기)으로 칠 때 판정도 그 모양으로 — 몸 중심에서 바라보는 쪽 반원,
+## 반지름은 원래 판정의 앞 끝(주정뱅이 55). 예전 몸 앞 작은 네모는 머리 위로 올라가는 술병을 못 덮었다(2026-10-11 사용자 결정)
+func _start_final_air_shape(fighter: Fighter) -> void:
+	var reach: float = _final_air_reach()
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node == null:
+		return
+	if _air_saved_shape == null:
+		_air_saved_shape = shape_node.shape
+	_final_air_now = true
+	hitbox.global_position = fighter.global_position
+	shape_node.shape = _make_front_half_circle(signf(fighter.facing) if fighter.facing != 0.0 else 1.0, reach)
+
 ## 공중 큰 휘두르기 판정 — 원래 판정 모양을 맡아 두고 바라보는 쪽 반원(air_swing_radius)을 끼운다.
 ## 회전 난무와 같은 반원 모양이지만 반지름이 따로다
 func _start_air_shape(fighter: Fighter) -> void:
@@ -1363,6 +1390,7 @@ func _start_air_shape(fighter: Fighter) -> void:
 ## 공중 큰 휘두르기를 정리한다 — 판정 모양을 원래대로. 판정 중(명중 콜백)일 수 있어 모양은 set_deferred로 바꾼다
 func _end_air_swing() -> void:
 	_air_now = false
+	_final_air_now = false
 	if _air_saved_shape == null:
 		return
 	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D

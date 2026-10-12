@@ -161,7 +161,7 @@ func _try_hit(area: Area2D) -> bool:
 		var combo: int = 0
 		if victim and victim.has_method("get_combo_count"):
 			combo = victim.get_combo_count()
-		_spawn_damage_number(area.global_position, damage, combo)
+		_spawn_damage_number(area.global_position, damage, combo, victim)
 		_play_hit_sound()
 	connected.emit(victim)
 	# **확정 경직(평타 콤보가 connected에서 거는 것)까지 다 걸린 뒤에** 더한다 — 먼저 더하면 큰 쪽만 남아 사라진다
@@ -277,10 +277,35 @@ func _contact_point(hurtbox: Area2D) -> Vector2:
 	return hurtbox.global_position
 
 ## 피격 지점에 데미지 숫자 팝업을 띄운다 (콤보 2 이상이면 "N HIT"도 함께)
-func _spawn_damage_number(pos: Vector2, dmg: int, combo: int) -> void:
+## 데미지 팝업을 맞은 캐릭터 머리 위에서 **뒤로(바라보는 반대쪽)** 얼마나, **위로** 얼마나 비켜 띄울지(px) — 아이콘 가운데 기준
+const DAMAGE_POPUP_BACK: float = 46.0
+const DAMAGE_POPUP_UP: float = 34.0
+
+## 맞은 캐릭터의 뒤쪽 머리 위 대각선 자리(월드). 머리 꼭대기는 Hurtbox 윗변(허트박스는 머리 꼭대기까지라는 규칙)
+func _damage_popup_spot(victim: Fighter) -> Vector2:
+	var top: float = victim.global_position.y - 45.0
+	var hb: Node = victim.get_node_or_null("Hurtbox")
+	if hb:
+		for c in hb.get_children():
+			if c is CollisionShape2D and c.shape:
+				top = minf(top, c.global_position.y - c.shape.get_rect().size.y * 0.5 * absf(c.global_scale.y))
+	var back: float = -signf(victim.facing) if victim.facing != 0.0 else -1.0
+	return Vector2(victim.global_position.x + back * DAMAGE_POPUP_BACK, top - DAMAGE_POPUP_UP)
+
+## victim = 맞은 쪽(캐릭터면 그 머리 위 뒤쪽에 데미지를 띄운다)
+func _spawn_damage_number(pos: Vector2, dmg: int, combo: int, victim: Node = null) -> void:
 	# 타이틀 뒤 구경 모드엔 숫자·HIT·BLOCK 팝업을 안 띄운다(2026-09-28 사용자 요청)
 	if GameState.game_mode == "attract":
 		return
+	# 대전 HUD가 있으면 **콤보는 때리고 있는 쪽 초상화 옆**에 따로 띄운다(2026-10-11 사용자) — 데미지 팝업엔 콤보를 안 붙인다
+	var hud: Node = get_tree().get_first_node_in_group("combat_hud")
+	if hud:
+		var attacker: Node = _source_fighter if _has_source and is_instance_valid(_source_fighter) else null
+		hud.show_combo_popup(attacker, combo)
+		combo = 0
+	# 데미지는 맞은 캐릭터의 **뒤쪽 머리 위 대각선** — 캐릭터를 안 가리게(2026-10-11 사용자). 선수가 아니면(고양이 집 등) 맞은 자리
+	if victim is Fighter and is_instance_valid(victim):
+		pos = _damage_popup_spot(victim)
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return

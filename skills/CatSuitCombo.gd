@@ -95,7 +95,7 @@ func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:
 	if not (victim is Fighter):
 		if victim.has_method("take_damage") and hitbox:
 			victim.take_damage(_pending_damage, hitbox.knockback)
-			hitbox._spawn_damage_number(victim.global_position, _pending_damage, 0)
+			hitbox._spawn_damage_number(victim.global_position, _pending_damage, 0, victim)
 		return
 	var target: Fighter = victim
 	if target.is_invincible:
@@ -112,7 +112,7 @@ func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:
 	if target.is_grabbed or not target.can_be_grabbed():
 		target.take_damage(_pending_damage, hitbox.knockback if hitbox else Vector2.ZERO)
 		if hitbox:
-			hitbox._spawn_damage_number(target.global_position, _pending_damage, target.get_combo_count())
+			hitbox._spawn_damage_number(target.global_position, _pending_damage, target.get_combo_count(), target)
 		return
 	# **날아가기를 먼저 끊는다** — 부모가 방금 마무리 타로 날려 보냈다
 	target.cancel_finisher_flight()
@@ -184,7 +184,7 @@ func _slam() -> void:
 	target.take_damage(_pending_damage, Vector2(-_dir, -1.0))
 	var hitbox: Hitbox = _combo_hitbox()
 	if hitbox:
-		hitbox._spawn_damage_number(target.global_position, _pending_damage, target.get_combo_count())
+		hitbox._spawn_damage_number(target.global_position, _pending_damage, target.get_combo_count(), target)
 	# 바닥에 꽂힌 반동으로 **등 뒤 쪽으로 튕겨 날아가며 기절** — 보통 3타 날아가기와 같은 값(배수만 곱함)
 	target.launch_finisher(-_dir,
 		_combo_value(combo, "finisher_launch_speed", 535.0) * slam_launch_speed_mult,
@@ -206,7 +206,7 @@ func _slam_creature(target: Node2D, combo: Node) -> void:
 			-_combo_value(combo, "finisher_launch_pop", 220.0)))
 	var hitbox: Hitbox = _combo_hitbox()
 	if hitbox and is_instance_valid(target):
-		hitbox._spawn_damage_number(target.global_position, _pending_damage, 0)
+		hitbox._spawn_damage_number(target.global_position, _pending_damage, 0, target)
 	var cam: Node = get_tree().get_first_node_in_group("game_camera")
 	if cam and cam.has_method("add_trauma"):
 		cam.add_trauma(slam_shake)

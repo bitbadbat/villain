@@ -12,9 +12,20 @@ extends SceneTree
 
 const OUT_SIZE := Vector2i(471, 491)
 const OUT_PATH := "res://_dex_fullbody_out.png"
-const RIG_PATH := "res://characters/floornoise/FloorNoiseRig.tscn"
-## 인물이 차지할 비율 — 1이면 테두리가 캔버스에 딱 붙는다
-const FILL := 0.82
+## 캐릭터 이름 -> 리그 씬. 쓸 때 `-- "지하철 아저씨"`처럼 이름을 넘긴다
+const RIGS := {
+	"층간소음 모자": "res://characters/floornoise/FloorNoiseRig.tscn",
+	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
+	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
+	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
+	"악플러": "res://characters/akpeulleo/AkpeulleoRig.tscn",
+	"일진": "res://characters/iljin/IljinRig.tscn",
+	"금쪽이": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
+}
+## 인물이 차지할 비율 — 1이면 테두리가 캔버스에 딱 붙는다.
+## 먼저 찍어 둔 넉 장이 0.90~0.94라 맞춰 둔다. 층간소음만 엄마와 아이가 가로로 늘어서서 따로 본다
+const DEFAULT_FILL := 0.92
+const FILLS := {"층간소음 모자": 0.82}
 ## 아이를 엄마 몸통에 얼마나 겹칠지(리그 기준). 아이는 **엄마 뒤쪽 발치**에 선다 —
 ## 옆으로 나란히 세우면 그림이 가로로 넓어져 도감 칸(기울어진 평행사변형)에서 잘린다(실측)
 const KID_OVERLAP := 4.0
@@ -29,7 +40,13 @@ func _initialize() -> void:
 	# 엄마와 아이를 함께 담아 통째로 키우고 옮길 바구니
 	var stage := Node2D.new()
 	vp.add_child(stage)
-	var rig: Node2D = load(RIG_PATH).instantiate()
+	var who: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "층간소음 모자"
+	if not RIGS.has(who):
+		print("모르는 캐릭터: ", who)
+		quit()
+		return
+	var fill: float = FILLS.get(who, DEFAULT_FILL)
+	var rig: Node2D = load(RIGS[who]).instantiate()
 	stage.add_child(rig)
 
 	# 리그가 제 자리를 잡을 틈을 준다(포즈·들쳐업기 보정이 _process에서 돈다)
@@ -54,7 +71,7 @@ func _initialize() -> void:
 
 	await process_frame
 	var box: Rect2 = _bounds(stage, stage)
-	var zoom: float = minf(OUT_SIZE.x * FILL / box.size.x, OUT_SIZE.y * FILL / box.size.y)
+	var zoom: float = minf(OUT_SIZE.x * fill / box.size.x, OUT_SIZE.y * fill / box.size.y)
 	stage.scale = Vector2(zoom, zoom)
 	stage.position = Vector2(OUT_SIZE) * 0.5 - box.get_center() * zoom
 
@@ -64,7 +81,7 @@ func _initialize() -> void:
 	await RenderingServer.frame_post_draw
 	var image: Image = vp.get_texture().get_image()
 	image.save_png(OUT_PATH)
-	print("saved %s  box=%s zoom=%.2f" % [OUT_PATH, box, zoom])
+	print("saved %s  (%s) box=%s zoom=%.2f" % [OUT_PATH, who, box, zoom])
 	quit()
 
 ## `node` 안의 보이는 조각을 전부 감싸는 사각형을 `space` 좌표로 돌려준다

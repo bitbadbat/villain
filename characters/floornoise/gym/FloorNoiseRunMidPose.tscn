@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="2_wv7m7"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_8k8cu"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="4_46rda"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="5_lw0b3"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음새로운버전.png" id="5_lw0b3"]
 
 [node name="GymRunMidPose" type="Node2D" unique_id=534442363]
 scale = Vector2(8, 8)

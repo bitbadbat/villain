@@ -238,8 +238,8 @@ corners = PackedVector2Array()
 lean = null
 fill_color = Color(0.3, 0.5, 0.85, 1)
 portrait_texture = ExtResource("8")
-name_text = "층간소음 빌런"
-character_key = "층간소음 빌런"
+name_text = "층간소음 모자"
+character_key = "층간소음 모자"
 
 [node name="TileSubwayVillain" type="Button" parent="Center/VBox/ThumbRow" unique_id=327050201]
 layout_mode = 0

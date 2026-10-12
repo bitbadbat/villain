@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://y8mu563seykp"
-path="res://.godot/imported/층간소음 청년.png-92e779b455aa24027440aeab8349e5a1.ctex"
+uid="uid://bsinhhe3b3d3u"
+path="res://.godot/imported/우쭈쭈새로운엄마.png-47ef0b029fc422caf8f3be099487bc21.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprite/도감/전신/층간소음 청년.png"
-dest_files=["res://.godot/imported/층간소음 청년.png-92e779b455aa24027440aeab8349e5a1.ctex"]
+source_file="res://sprite/층간소음/우쭈쭈새로운엄마.png"
+dest_files=["res://.godot/imported/우쭈쭈새로운엄마.png-47ef0b029fc422caf8f3be099487bc21.ctex"]
 
 [params]
 

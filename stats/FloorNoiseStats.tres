@@ -1,11 +1,11 @@
 [gd_resource type="Resource" script_class="CharacterStats" format=3 uid="uid://bjrsyl1q1nlar"]
 
 [ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://y8mu563seykp" path="res://sprite/도감/전신/층간소음 청년.png" id="2_ingame"]
+[ext_resource type="Texture2D" uid="uid://y8mu563seykp" path="res://sprite/도감/전신/층간소음 모자.png" id="2_ingame"]
 
 [resource]
 script = ExtResource("1")
-character_name = "층간소음 빌런"
+character_name = "층간소음 모자"
 max_hp = 105
 move_speed = 398.25
 attack_rating = 3

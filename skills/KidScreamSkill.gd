@@ -1,7 +1,7 @@
 class_name KidScreamSkill
 extends Skill
 
-## **아이 비명** — 층간소음 빌런 1번 스킬. 품에 안긴 아이가 악을 써서
+## **아이 비명** — 층간소음 모자 1번 스킬. 품에 안긴 아이가 악을 써서
 ## **사정거리 안의 상대가 한동안 기본공격을 못 쓰게** 만든다.
 ##
 ## 이동도 되고 스킬도 쓸 수 있다 — **기본공격만** 막힌다. 그래서 공포(`apply_fear`)와는 다르다.
@@ -13,8 +13,9 @@ extends Skill
 ## 소리가 닿는 거리(px). 이 안에 있는 상대만 걸린다
 @export var radius: float = 300.0
 ## 상대 기본공격이 잠기는 시간(초).
-## ⚠️ `Skill`에 이미 `lock_duration`(내 동작이 묶이는 시간)이 있어서 이름을 달리 썼다 — 서로 다른 값이다
-@export var attack_lock_duration: float = 4.0
+## ⚠️ `Skill`에 이미 `lock_duration`(내 동작이 묶이는 시간)이 있어서 이름을 달리 썼다 — 서로 다른 값이다.
+## 2026-10-10 사용자 지시로 4.0에서 **0.6배**로 줄였다 — 4초는 맞은 쪽이 손쓸 데가 없이 길었다
+@export var attack_lock_duration: float = 2.4
 ## 같이 들어가는 피해. 0이면 피해 없이 잠그기만 한다
 @export var damage: int = 0
 ## 비명 음파 연출 장면(`KidScream.tscn`). 비워 두면 소리만 나고 그림은 안 뜬다

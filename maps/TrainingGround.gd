@@ -19,6 +19,8 @@ const GRID_HALF_WIDTH: float = 1000.0
 ## 이 아래로 떨어지면 바닥 밖으로 나간 것으로 보고 다시 세운다
 const FALL_LIMIT_Y: float = 900.0
 
+## 처음(캐릭터·더미를 세운 직후)에 맵에 있던 자식들. "되돌리기"가 치울 것을 가리는 기준이다
+var _original_children: Array[Node] = []
 var _fighter: Fighter
 ## 스킬 데미지·넉백을 확인할 고정 타겟(샌드백) — 가만히 서서 맞아주기만 한다
 var _dummy: Fighter
@@ -43,6 +45,10 @@ var _jump_slider: HSlider
 var _speed_slider: HSlider
 var _dummy_hp_label: Label
 var _collision_legend: RichTextLabel
+## 조절 패널을 담은 층 — 궁극기 연출이 도는 동안 통째로 숨긴다
+var _ui_layer: CanvasLayer = null
+## 궁극기 컷인 — 떠 있는 동안도 패널을 숨겨야 한다
+var _cut_in: CanvasLayer = null
 var _time_label: Label
 var _time_slider: HSlider
 ## 동작 테스트 버튼 결과(눈 깜빡임이 없는 캐릭터 안내 등)
@@ -54,13 +60,17 @@ var _collision_view
 
 func _ready() -> void:
 	# 훈련장에서도 궁극기 컷인을 확인할 수 있게 같이 심는다
-	add_child(load("res://ui/UltimateCutIn.tscn").instantiate())
+	_cut_in = load("res://ui/UltimateCutIn.tscn").instantiate()
+	add_child(_cut_in)
 	_collision_view = preload("res://maps/CollisionDebugView.gd").new()
 	_collision_view.name = "CollisionDebugView"
 	add_child(_collision_view)
 	_build_ui()
 	_spawn_character(GameState.p1_character_path)
 	_spawn_dummy()
+	# **여기까지가 "원래 있던 것"이다.** 이 뒤에 맵에 붙는 건 전부 캐릭터가 깔아 놓은 것
+	# (고양이 집·고양이·개찰구·투사체…)이라, 되돌리기 때 치울 대상이 된다
+	_original_children = get_children()
 
 func _process(delta: float) -> void:
 	if not (_fighter and is_instance_valid(_fighter)):
@@ -76,6 +86,48 @@ func _process(delta: float) -> void:
 		_respawn()
 
 	_update_readout()
+	_update_panel_visibility()
+
+## **궁극기 연출이 도는 동안 조절 패널을 숨긴다**(2026-10-11 사용자: 도감 영상 찍을 때 패널이 들어간다).
+## 컷인과 영역전개는 화면을 다 덮는데 패널은 그 위에 그려져서 영상에 그대로 찍혔다.
+## 연출이 끝나면 저절로 다시 보인다 — 끄고 켜는 버튼을 따로 두지 않는다
+func _update_panel_visibility() -> void:
+	if _ui_layer == null or not is_instance_valid(_ui_layer):
+		return
+	_ui_layer.visible = not _ultimate_showing()
+
+## 지금 궁극기 연출·효과가 화면을 덮고 있는지
+func _ultimate_showing() -> bool:
+	if _cut_in != null and is_instance_valid(_cut_in) and _cut_in.visible:
+		return true
+	# 궁 효과가 도는 동안(영역전개 안, 지하철 수호자 등). 안 도는 스킬은 -1을 준다
+	if _fighter != null and is_instance_valid(_fighter):
+		var ult: Skill = _fighter.skill_ultimate
+		if ult != null and ult.active_ratio() > 0.0:
+			return true
+	# 들머리 연출(현관문·빼꼼)은 **맵 자식으로 붙는 CanvasLayer**다.
+	# 처음부터 있던 것(패널·컷인)은 빼고, 새로 생긴 층만 본다
+	for child in get_children():
+		if child is CanvasLayer and child.visible and not (child in _original_children):
+			if _layer_draws(child):
+				return true
+	return false
+
+## 이 층이 지금 **실제로 뭔가 그리고 있는지**. 층이 떠 있다고 다 가리는 건 아니다 —
+## 영역전개의 암전 판은 한 번 만들면 그대로 남고 알파만 0으로 돌아가는데(`_ensure_fade`),
+## 층이 있다는 것만 보면 궁이 끝난 뒤에도 영영 가린 줄 안다(2026-10-11 실측)
+func _layer_draws(layer: CanvasLayer) -> bool:
+	for node in layer.get_children():
+		if not (node is CanvasItem) or not node.visible:
+			continue
+		var a: float = node.modulate.a * node.self_modulate.a
+		# ⚠️ ColorRect는 투명도를 `modulate`가 아니라 **`color.a`**에 들고 있다 —
+		# 그걸 안 보면 다 걷힌 암전 판도 "가리는 중"으로 읽힌다(2026-10-11 실측)
+		if node is ColorRect:
+			a *= (node as ColorRect).color.a
+		if a > 0.01:
+			return true
+	return false
 
 ## 공중에 떠 있는 동안 최고 높이·체공 시간·수평 이동 거리를 재고, 착지하는 순간 결과로 확정한다
 func _measure_jump(delta: float) -> void:
@@ -185,6 +237,7 @@ func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "TrainingUI"
 	add_child(layer)
+	_ui_layer = layer
 
 	var panel := PanelContainer.new()
 	panel.position = Vector2(16, 16)
@@ -381,7 +434,19 @@ func _on_lookback_pressed() -> void:
 func _on_blink_pressed() -> void:
 	_play_motion("play_blink")
 
+## **캐릭터가 맵에 깔아 놓은 것을 전부 치운다** — 고양이 집, 돌아다니는 고양이, 개찰구,
+## 날아가다 멈춘 투사체 같은 것들(2026-10-11 사용자: 훈련장에서 집을 설치하면 없앨 수가 없다).
+##
+## 이름이나 종류로 하나씩 가리지 않고 **처음에 있던 자식 목록과 견주는** 방식이라,
+## 새 캐릭터가 무엇을 깔든 따로 손볼 필요가 없다
+func _clear_spawned() -> void:
+	for child in get_children():
+		if child in _original_children:
+			continue
+		child.queue_free()
+
 func _on_reset_pressed() -> void:
+	_clear_spawned()
 	Fighter.gravity = Fighter.DEFAULT_GRAVITY
 	Fighter.jump_velocity = Fighter.DEFAULT_JUMP_VELOCITY
 	_speed_scale = 1.0

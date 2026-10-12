@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="PackedScene" path="res://ui/story/SubwayVillainIdle.tscn" id="2_idle"]
+
+[node name="StoryScene26" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.5
+hold_time = 3.1
+fade_out_time = 0.6
+next_scene = "res://ui/story/StoryScene27.tscn"
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Villain" parent="." instance=ExtResource("2_idle")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pan_time = 2.4
+pan_from_y = 1060.0
+pan_delay = 0.2
+breath_amount = 0.008
+bang_lift = -11.0
+bang_rebound = 3.0
+bang_shake = 2.5
+sway_amount = 2.0
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

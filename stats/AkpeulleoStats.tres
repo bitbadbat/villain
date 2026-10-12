@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" uid="uid://bnxk4f4u80w7m" path="res://stats/CharacterStats.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/cutin/AkpeulleoCutIn.tscn" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/도감/전신/악플러.png" id="9_ingame"]
 
 [resource]
 script = ExtResource("1")
 character_name = "악플러"
 move_speed = 418.5
 ultimate_cutin_scene = ExtResource("2")
+dex_ingame_texture = ExtResource("9_ingame")

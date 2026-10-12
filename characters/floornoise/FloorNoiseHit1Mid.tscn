@@ -4,9 +4,9 @@
 [ext_resource type="Texture2D" uid="uid://6shjavroe8hu" path="res://sprite/층간소음/층간소음발.png" id="1_foot"]
 [ext_resource type="Texture2D" uid="uid://c67skkj6ibwg4" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="2_body"]
 [ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="3_hand"]
-[ext_resource type="Texture2D" uid="uid://bbhmttifgeiro" path="res://sprite/층간소음/층간소음얼굴찐.png" id="4_head"]
+[ext_resource type="Texture2D" uid="uid://d3lbpmk1q8xrg" path="res://sprite/층간소음/층간소음새로운버전.png" id="4_head"]
 [ext_resource type="Texture2D" uid="uid://3vyv3toxmea7" path="res://sprite/층간소음/층간소음아들몸.png" id="K_BODY"]
-[ext_resource type="Texture2D" uid="uid://breacucrxeqiw" path="res://sprite/층간소음/층간소음아들.png" id="K_HEAD"]
+[ext_resource type="Texture2D" uid="uid://dboo6hiavefc5" path="res://sprite/층간소음/시무룩한아이.png" id="K_HEAD"]
 
 [node name="FloorNoiseHit1Mid" type="Node2D" unique_id=1122573970]
 scale = Vector2(8, 8)

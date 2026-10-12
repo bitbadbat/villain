@@ -18,6 +18,10 @@
 [ext_resource type="PackedScene" uid="uid://cq8splashliq0r" path="res://combat/LiquorSplash.tscn" id="16"]
 [ext_resource type="Texture2D" uid="uid://cf6crjewo2whw" path="res://sprite/주정뱅이/꺠진소주병.png" id="17"]
 [ext_resource type="PackedScene" uid="uid://cq8shardgl0ss" path="res://combat/GlassShard.tscn" id="18"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/주정뱅이_기본공격.ogv" id="vid_atk"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/주정뱅이_술마시기.ogv" id="vid_drink"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/주정뱅이_토하기.ogv" id="vid_vomit"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/고성방가.ogv" id="vid_ult"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -68,6 +72,8 @@ broken_item_texture = ExtResource("17")
 break_debris_scene = ExtResource("18")
 break_debris_count = 5
 cooldown = 0.3
+description = "소주병으로 3연타. 마지막 타에 멀리 날린다. 여덟 번 치면 병이 깨져 새로 꺼낸다."
+demo_video = ExtResource("vid_atk")
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack" unique_id=1787251826]
 monitoring = false
@@ -83,6 +89,8 @@ script = ExtResource("6")
 cooldown = 3.0
 lock_duration = 1.1
 icon = ExtResource("13")
+description = "소주를 한 모금 들이켜 취기를 쌓는다(최대 3). 쌓일수록 토하기가 세지고 발은 느려진다."
+demo_video = ExtResource("vid_drink")
 
 [node name="Skill2" type="Node" parent="." unique_id=556174220]
 script = ExtResource("7")
@@ -92,6 +100,8 @@ mouth_offset = Vector2(18, -15)
 cooldown = 4.0
 lock_duration = 0.6
 icon = ExtResource("14")
+description = "입에서 앞으로 기둥을 뿜는다. 취기가 높을수록 길고 굵고 아프며, 세 모금이면 맵 반대편 벽까지 닿는다. 쓰면 취기가 전부 사라진다."
+demo_video = ExtResource("vid_vomit")
 
 [node name="SkillUltimate" type="Node" parent="." unique_id=2025535014]
 script = ExtResource("9")
@@ -101,6 +111,9 @@ cooldown = 20.0
 start_on_cooldown = true
 lock_duration = 0.5
 icon = ExtResource("15")
+skill_name = "고성방가"
+description = "부채꼴로 고함을 지른다. 맞은 상대는 뒤로 밀리고 한동안 다리가 풀려 점프가 낮아진다."
+demo_video = ExtResource("vid_ult")
 
 [node name="SkillRangePreview" type="Node2D" parent="." unique_id=1400754697]
 script = ExtResource("12")

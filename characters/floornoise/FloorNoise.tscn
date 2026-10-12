@@ -12,6 +12,10 @@
 [ext_resource type="PackedScene" path="res://skills/RunningKid.tscn" id="23_kid"]
 [ext_resource type="Script" path="res://skills/FloorDomainUltimate.gd" id="24_domain"]
 [ext_resource type="Script" path="res://skills/KidDropkick.gd" id="25_kick"]
+[ext_resource type="VideoStream" uid="uid://cdiqhxxgsy2fu" path="res://sprite/도감/영상/층간소음_기본공격.ogv" id="vid_atk"]
+[ext_resource type="VideoStream" uid="uid://c82uytop5dug7" path="res://sprite/도감/영상/우리애가어려서요.ogv" id="vid_scream"]
+[ext_resource type="VideoStream" uid="uid://dd20w6r6a0js8" path="res://sprite/도감/영상/뛰어놀게두세요.ogv" id="vid_rush"]
+[ext_resource type="VideoStream" uid="uid://m8fbcqm6tarj" path="res://sprite/도감/영상/영역전개윗집.ogv" id="vid_ult"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -56,6 +60,7 @@ combo_lunge_lead = Array[float]([0.0, 0.3, 0.3])
 cooldown = 0.3
 miss_cooldown = 1.0
 skill_name = "주먹·주먹·드롭킥"
+demo_video = ExtResource("vid_atk")
 description = "오른 주먹, 왼 주먹으로 두 번 때리고 마지막엔 옆에 있던 아이가 날아가 드롭킥을 꽂는다."
 
 [node name="Hitbox" type="Area2D" parent="BasicAttack"]
@@ -72,14 +77,16 @@ script = ExtResource("25_kick")
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("20_scream")
 cooldown = 10.0
-skill_name = "악쓰기"
+skill_name = "우리 애가 어려서요"
+demo_video = ExtResource("vid_scream")
 description = "품에 안긴 아이가 악을 쓴다. 소리가 닿은 상대는 4초 동안 기본공격을 못 쓴다. 이동과 스킬은 그대로다."
 scream_scene = ExtResource("21_screamfx")
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("22_rush")
 cooldown = 8.0
-skill_name = "풀어놓기"
+skill_name = "뛰어놀게 두세요"
+demo_video = ExtResource("vid_rush")
 description = "아이를 바닥에 내려놓는다. 아이가 앞으로 쿵쿵 달려갔다가 돌아와 다시 안긴다. 나가 있는 동안에는 악쓰기를 못 쓴다."
 kid_scene = ExtResource("23_kid")
 
@@ -87,5 +94,6 @@ kid_scene = ExtResource("23_kid")
 script = ExtResource("24_domain")
 cooldown = 45.0
 start_on_cooldown = true
-skill_name = "영역전개 — 윗집"
-description = "두 사람을 위아래 두 층짜리 집으로 끌고 간다. 위층은 층간소음 빌런, 아래층은 상대. 걷고 뛰고 아이를 풀어놓는 것이 전부 아래층으로 내려꽂는 충격파가 된다."
+skill_name = "층간소음 체험"
+demo_video = ExtResource("vid_ult")
+description = "두 사람을 위아래 두 층짜리 집으로 끌고 간다. 위층은 층간소음 모자, 아래층은 상대. 걷고 뛰고 아이를 풀어놓는 것이 전부 아래층으로 내려꽂는 충격파가 된다."

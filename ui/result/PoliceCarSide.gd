@@ -360,6 +360,37 @@ func _mirror(u: float, v0: float, v1: float) -> void:
 	_quad([_w(u, v0, y0), _w(u, v1, y0), _w(u, v1, y1), _w(u, v0, y1)], body_lit)
 	_quad([_w(u, v0, y0), _w(u, v1, y0), _w(u, v1, y0 + 0.035), _w(u, v0, y0 + 0.035)], stripe_color, false)
 
+## 조명(`ArrestLighting`)이 읽는 지금 불빛 — 켜진 경광등과 전조등 자리(이 노드 좌표), 1m가 몇 px인지(`unit`).
+## 그림(_draw)과 같은 자리·같은 박자를 쓴다
+func light_state() -> Dictionary:
+	var a: float = deg_to_rad(yaw_deg)
+	_f = Vector3(cos(a), 0.0, -sin(a))
+	_s = Vector3(sin(a), 0.0, cos(a))
+	var w: float = width
+	var u0: float = -hood_length - windshield_run - 0.12
+	var mid: float = w * 0.5
+	var y: float = roof_y + 0.075
+	var red_on: bool
+	var blue_on: bool
+	if siren_tone != 0:
+		var flash: bool = _tone_flash_on(tone_time)
+		red_on = siren_tone > 0 and flash
+		blue_on = siren_tone < 0 and flash
+	else:
+		var phase: float = fposmod(time / maxf(siren_cycle, 0.05), 1.0)
+		red_on = _flash_on(phase)
+		blue_on = _flash_on(fposmod(phase + 0.5, 1.0))
+	var red3: Vector3 = _w(u0, (0.14 + mid) * 0.5, y)
+	var head_y: float = (bumper_top + 0.09 + nose_top - 0.035) * 0.5
+	return {
+		"red_on": red_on, "blue_on": blue_on,
+		"red": _p(red3), "blue": _p(_w(u0, (mid + w - 0.14) * 0.5, y)),
+		"red_color": siren_red, "blue_color": siren_blue,
+		"head_l": _p(_w(0.0, 0.205, head_y)), "head_r": _p(_w(0.0, w - 0.205, head_y)),
+		"head_color": headlight_color,
+		"unit": _px_per_unit(red3),
+	}
+
 ## 한 음이 시작되고 t초 지났을 때 켜져 있는지 — 시작하자마자 번쩍, 잠깐 꺼졌다 한 번 더
 func _tone_flash_on(t: float) -> bool:
 	return (t >= 0.0 and t < tone_flash.x) or (t >= tone_flash.y and t < tone_flash.z)

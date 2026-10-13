@@ -53,7 +53,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not enabled:
 		return
-	_now = Time.get_ticks_msec() / 1000.0
+	_now = Timers.now_msec() / 1000.0
 	_shapes.clear()
 	_live_ids.clear()
 	_collect(get_parent())

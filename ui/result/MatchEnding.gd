@@ -160,7 +160,7 @@ func play(info: Dictionary) -> void:
 
 func _process(_delta: float) -> void:
 	# 실제 시간 — delta는 Engine.time_scale에 눌리므로 쓰지 않는다
-	var now: int = Time.get_ticks_usec()
+	var now: int = Timers.now_usec()
 	var dt: float = 0.0 if _last_us == 0 else minf(float(now - _last_us) / 1000000.0, 0.05)
 	_last_us = now
 	if _phase == Phase.IDLE or _phase == Phase.DONE:

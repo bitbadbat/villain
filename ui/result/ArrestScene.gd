@@ -148,7 +148,7 @@ func _ready() -> void:
 	process_priority = 100
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade.color = Color(0, 0, 0, 1)
-	_last_usec = Time.get_ticks_usec()
+	_last_usec = Timers.now_usec()
 	_edge_material = _building.material
 	_apply_backdrop(default_backdrop if default_backdrop != null else load(DEFAULT_BACKDROP))
 	_build_mobs()
@@ -220,7 +220,7 @@ func play(info: Dictionary) -> void:
 
 func _process(_delta: float) -> void:
 	# 실제 시간으로 잰다 — KO 슬로처럼 Engine.time_scale이 바뀌어 있어도 박자가 안 흔들린다
-	var now: int = Time.get_ticks_usec()
+	var now: int = Timers.now_usec()
 	var dt: float = minf(float(now - _last_usec) / 1000000.0, 0.05)
 	_last_usec = now
 	_frame_dt = dt

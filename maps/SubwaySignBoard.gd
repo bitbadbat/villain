@@ -60,7 +60,7 @@ func _process(delta: float) -> void:
 		_text.size.x = board_size.x
 		_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_text.position.x = 0.0
-		var on: bool = sin(Time.get_ticks_msec() / 1000.0 * TAU * alarm_blink_speed) > -0.3
+		var on: bool = sin(Timers.now_msec() / 1000.0 * TAU * alarm_blink_speed) > -0.3
 		_text.modulate = alarm_color if on else Color(alarm_color, 0.25)
 	else:
 		_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT

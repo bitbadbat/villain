@@ -336,7 +336,7 @@ func _foot_y() -> float:
 func _wave_hit() -> void:
 	if wave_damage <= 0 or not is_inside_tree():
 		return
-	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	var now: float = float(Timers.now_msec()) / 1000.0
 	for other in get_tree().get_nodes_in_group("fighters"):
 		if other == _mom or not (other is Fighter) or not is_instance_valid(other):
 			continue

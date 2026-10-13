@@ -73,7 +73,7 @@ static var focus_active: bool = false
 
 ## 지금 궤적을 실제 시간으로 길게 남길 때인가
 static func trail_active() -> bool:
-	return Time.get_ticks_usec() < _trail_until_us
+	return Timers.now_usec() < _trail_until_us
 
 var _mat: ShaderMaterial
 var _half: Vector2 = Vector2(640.0, 360.0) * OVERSIZE
@@ -132,10 +132,10 @@ func _ready() -> void:
 func play(victim: Node2D, attacker: Node2D = null) -> void:
 	if GameState.game_mode == "attract":
 		return
-	_start_us = Time.get_ticks_usec()
+	_start_us = Timers.now_usec()
 	_running = true
 	_start_freeze()
-	_trail_until_us = Time.get_ticks_usec() + int(TRAIL_TIME * 1000000.0)
+	_trail_until_us = Timers.now_usec() + int(TRAIL_TIME * 1000000.0)
 	_focus_fighters()
 	_show_text(victim.global_position + TEXT_OFFSET)
 	_zoom_in(victim, attacker)
@@ -147,7 +147,7 @@ func play(victim: Node2D, attacker: Node2D = null) -> void:
 func _process(_delta: float) -> void:
 	if not _running:
 		return
-	var t: float = float(Time.get_ticks_usec() - _start_us) / 1000000.0
+	var t: float = float(Timers.now_usec() - _start_us) / 1000000.0
 	_update_freeze(t)
 	_update_blur(t)
 	_update_text(t)

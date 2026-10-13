@@ -28,3 +28,15 @@ static func after(owner: Node, delay: float, cb: Callable = Callable(), real_tim
 ## lifetime초 뒤 target을 스스로 지운다(장식 이펙트·투사체 등의 "얼마 지나면 사라진다" 패턴)
 static func self_destruct(target: Node, lifetime: float) -> Timer:
 	return after(target, lifetime, target.queue_free)
+
+## 실제 시간(마이크로초) — 평소엔 `Time.get_ticks_usec()` 그대로.
+## **Movie Maker로 녹화할 때만**(2026-10-13 홍보 영상) 프레임 수로 센다: 녹화는 실제보다 느리게 돌아서
+## 벽시계로 재면 카운터 슬로·KO 연출이 영상에서 4배 짧아졌다. 실제 시간을 잴 땐 이걸 쓸 것
+static func now_usec() -> int:
+	if Engine.get_write_movie_path() != "":
+		return int(Engine.get_process_frames() * 1000000.0 / float(ProjectSettings.get_setting("editor/movie_writer/fps", 60)))
+	return Time.get_ticks_usec()
+
+## `now_usec()`의 밀리초판
+static func now_msec() -> int:
+	return int(now_usec() / 1000)

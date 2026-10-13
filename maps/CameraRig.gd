@@ -181,7 +181,7 @@ func focus_on(target: Node2D, zoom_mul: float = 1.6, duration: float = 0.45, ble
 	_focus_base_zoom = zoom.x
 	_focus_tilt = deg_to_rad(tilt_deg)
 	_focus_track = track_speed
-	_focus_last_us = Time.get_ticks_usec()
+	_focus_last_us = Timers.now_usec()
 	# 지금(다가가기 전) 화면 아랫변 — 다가가는 동안 이보다 아래는 안 비춘다
 	_focus_view_bottom = get_screen_center_position().y + get_viewport_rect().size.y * 0.5 / maxf(zoom.y, 0.01)
 	_focus_start_pos = global_position
@@ -205,7 +205,7 @@ func _update_focus(delta: float) -> bool:
 	# 실제 시간으로 센다 — 느려진 배속에 안 끌려간다. **delta를 배속으로 나누지 않고 시계를 직접 본다** —
 	# 화면을 멈추는(배속 0.0001) 바로 그 프레임엔 delta가 아직 안 줄어 있어서 나누면 "69초 흘렀다"가 되어
 	# 다가가기가 그 자리에서 끝났다(2026-10-10 카운터 히트 줌에서 실측)
-	var now_us: int = Time.get_ticks_usec()
+	var now_us: int = Timers.now_usec()
 	var real_dt: float = clampf(float(now_us - _focus_last_us) / 1000000.0, 0.0, 0.1)
 	_focus_last_us = now_us
 	_focus_left -= real_dt

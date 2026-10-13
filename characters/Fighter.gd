@@ -1613,7 +1613,7 @@ static func debug_hit_rect(rect: Rect2) -> void:
 	if not debug_hit_view:
 		return
 	debug_hit_areas.append({"points": PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y),
-		rect.end, Vector2(rect.position.x, rect.end.y)]), "time": Time.get_ticks_msec() / 1000.0})
+		rect.end, Vector2(rect.position.x, rect.end.y)]), "time": Timers.now_msec() / 1000.0})
 
 ## 이 원(월드 좌표)을 판정으로 쟀다고 알린다
 static func debug_hit_circle(center: Vector2, radius: float) -> void:
@@ -1623,7 +1623,7 @@ static func debug_hit_circle(center: Vector2, radius: float) -> void:
 	for i in 24:
 		var a: float = TAU * i / 24.0
 		pts.append(center + Vector2(cos(a), sin(a)) * radius)
-	debug_hit_areas.append({"points": pts, "time": Time.get_ticks_msec() / 1000.0})
+	debug_hit_areas.append({"points": pts, "time": Timers.now_msec() / 1000.0})
 
 ## property(예: "move_speed_multiplier")에 id로 구분되는 배수 효과를 하나 건다.
 ## 같은 property에 걸린 다른 id의 효과와는 서로 지우지 않고 곱해져서 함께 적용된다.

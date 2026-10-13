@@ -70,6 +70,16 @@
   - ⚠️ 지하철 "단소 반격"(`CounterSkill`/`counter_stance`/`try_counter`)과 **이름 섞지 말 것** — 이쪽은 `counter_hit`/`counter_window`
   - 흐림은 **밉맵(`filter_linear_mipmap`)에 기대지 말 것** — 호환 렌더러에서 안 흐려졌다. `far_blur`처럼 직접 여러 번 뽑는다
 
+## 소리 (2026-10-13)
+
+파일은 `audio/`(공용) + `audio/<캐릭터>/`. 결과 화면 소리만 예전 `ResultSfx`(`Sound/result/`).
+
+- **효과음은 `Sfx.play(노드, 소리, volume_db, pitch, jitter)` 한 곳으로** — 장면 루트에 붙여 부른 노드가 사라져도 끝까지 남, 버스 `Sfx`, 구경 모드(attract)면 무음. 부른 노드(없으면 가장 가까운 Node2D) 자리에 `AudioStreamPlayer2D`를 놓아 **화면 좌우로 갈린다**(거리 감쇠 끔, `PANNING_STRENGTH` 0.8). 받은 플레이어는 2D일 수도 아닐 수도 있어 **타입 없이** 받을 것(`var p = Sfx.play(...)`, 그 위 `create_tween()`은 `var t: Tween`으로 — `:=`는 추론 실패)
+- **소리 크기는 `Sfx.GAIN_DB` 표 한 곳**(파일 경로 → dB) — 실측 크기를 종류별 목표에 맞춘 값(큰 순간 -13 / 기술 -16 / 잦은 것 -19 / 메뉴 -20 / 움직임 -21, 최대치 -1dB 이하). ⚠️ **새 소리를 넣거나 파일을 바꾸면 다시 재서 한 줄** — 없으면 0(파일 그대로). 부르는 쪽에서 따로 줄이지 말 것. 직접 만든 플레이어(자전거 바퀴·메뉴 클릭)도 `Sfx.gain_of(stream)`
+- **재는 법**: 쓰는 구간만 틀어 `--write-movie x.avi`로 녹음 → avi의 `01wb` 덩어리(PCM 16bit) → 50ms 창 RMS(가장 큰 창의 1% 밑은 무음으로 빼고) 평균. 파형으로 **앞뒤 무음·여러 번 든 파일**도 찾는다 — `punch.mp3`는 22초에 펀치 9번이라 첫 번(0.2~0.6초)만, `hp 회복.mp3`는 8초 중 1.5초만 씀. 자르는 구간은 `seek` + 끝에서 줄여 끄는 트윈(뚝 끊기면 튐)
+- 길목: 메뉴 클릭 = 오토로드 `ui/UiSound.gd`(모든 `BaseButton` pressed + 메뉴 화면·일시정지 창의 화살표/Enter/ESC — 전투 중엔 P2 화살표라 안 냄, 타이틀은 자기 소리), 회복 = `Fighter.heal()`(`play_sound`를 끄면 공용 소리 없음 — 흰 고양이 핥기), 패링 = `take_damage`의 방어 분기(`play_parry_sound`, 피해 길을 안 타는 공격은 직접), 평타 = `ComboMeleeAttack`(맞음 `punch_sound`/3타 `finisher_sound`/빗나감 헛스윙 둘 랜덤/무기 깨짐 `break_sound`/회전 난무 `spin_flurry_sound`)
+- 새 mp3는 Godot이 import해야 `preload`가 된다 — 에디터 밖에서 넣었으면 `--headless --editor --quit` 한 번. ⚠️ 파일 찾을 때 **수정 시각으로 거르지 말 것**(복사한 파일은 원래 시각이 남아 놓쳤다)
+
 ## 캐릭터
 
 로스터 `GameState.CHARACTERS` + **`CHARACTER_RIGS` 둘 다**. 훈련장 전용 `TRAINING_ONLY_CHARACTERS`(주인공), 숨김 `HIDDEN_CHARACTERS`. 새 캐릭터 크기 기준 = 악플러 머리(상한 55x55). **새 스킬은 `AIController._want_skill()`에 한 줄**(또는 스킬에 `ai_wants_use`).

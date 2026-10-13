@@ -74,6 +74,10 @@ extends Skill
 
 ## 데미지 배수를 걸 때 쓰는 이름표. 같은 이름으로 걸고 풀어야 다른 버프와 안 싸운다
 const MODIFIER_ID := "dual_instrument"
+## 앞으로 내지르는 순간(파일 앞 0.5초가 무음이라 건너뜀) / 새긴 자국이 터질 때
+const RUSH_SOUND: AudioStream = preload("res://audio/지하철 아저씨/지하철 아저씨 대쉬 배기.mp3")
+const RUSH_SOUND_FROM := 0.5
+const BURST_SOUND: AudioStream = preload("res://audio/지하철 아저씨/지하철아저씨 벤 자국 터질 떄 .mp3")
 
 ## 지금 악기를 들고 있는 캐릭터(없으면 null)
 var _armed_fighter: Fighter = null
@@ -173,6 +177,9 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 		_rush_left = dash_forward_distance
 		_set_rig_phase(1.0)
 		fighter.start_air_trail(dash_forward_distance / maxf(dash_forward_speed, 1.0))
+		var rush_sound = Sfx.play(fighter, RUSH_SOUND)
+		if rush_sound:
+			rush_sound.seek(RUSH_SOUND_FROM)
 	else:
 		_end_rush(fighter)
 
@@ -289,6 +296,9 @@ func _make_mark() -> Node2D:
 ## 새겨 둔 자국을 모두 **터뜨린다** — 보이는 건 자국이, 피해는 그 자리에 잠깐 켜는 판정이 맡는다
 func _burst_marks() -> void:
 	_burst_left = 0.0
+	# 여럿을 한꺼번에 터뜨려도 소리는 한 번
+	if not _marks.is_empty():
+		Sfx.play(self, BURST_SOUND)
 	for victim in _marks:
 		var mark: Variant = _marks[victim]
 		if mark != null and is_instance_valid(mark) and mark.has_method("burst"):

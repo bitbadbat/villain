@@ -9,7 +9,7 @@ const CHARACTERS := {
 	"주정뱅이": "res://characters/jujeongbaengi/Jujeongbaengi.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMom.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillain.tscn",
-	"층간소음 빌런": "res://characters/floornoise/FloorNoise.tscn",
+	"층간소음 모자": "res://characters/floornoise/FloorNoise.tscn",
 	"일진": "res://characters/iljin/Iljin.tscn",
 }
 
@@ -48,7 +48,7 @@ const CHARACTER_COLORS := {
 	"주정뱅이": Color(0.8, 0.5, 0.2),
 	"고양이 아주머니": Color(0.9, 0.55, 0.7),
 	"지하철 아저씨": Color(0.3, 0.65, 0.55),
-	"층간소음 빌런": Color(0.3, 0.5, 0.85),
+	"층간소음 모자": Color(0.3, 0.5, 0.85),
 	"일진": Color(0.25, 0.3, 0.5),
 	"주인공": Color(0.2, 0.35, 0.7),   # 스토리 주인공(경찰) — 대전 로스터엔 없고 훈련장에서만 고른다
 	"황근출 해병": Color(0.4, 0.45, 0.35),   # 숨겨진 캐릭터
@@ -62,7 +62,7 @@ const PORTRAITS := {
 	"금쪽이": "res://sprite/금쪽이/축법소년 정면.png",
 	"주정뱅이": "res://sprite/주정뱅이/몸/주정뱅이얼굴정면.png",
 	"악플러": "res://sprite/악플러/몸/악플러정면머리.png",
-	"층간소음 빌런": "res://sprite/층간소음/층간소음정면.png",
+	"층간소음 모자": "res://sprite/층간소음/층간소음정면.png",
 	"지하철 아저씨": "res://sprite/지하철빌런/지하철빌런정면.png",
 	"고양이 아주머니": "res://sprite/고양이 아줌마/고양이아줌마정면.png",
 	"일진": "res://sprite/일진/정면일진.png",
@@ -79,7 +79,7 @@ const CHARACTER_RIGS := {
 	"주정뱅이": "res://characters/jujeongbaengi/JujeongbaengiRig.tscn",
 	"고양이 아주머니": "res://characters/catmom/CatMomRig.tscn",
 	"지하철 아저씨": "res://characters/subwayvillain/SubwayVillainRig.tscn",
-	"층간소음 빌런": "res://characters/floornoise/FloorNoiseRig.tscn",
+	"층간소음 모자": "res://characters/floornoise/FloorNoiseRig.tscn",
 	"일진": "res://characters/iljin/IljinRig.tscn",
 	"황근출 해병": "res://characters/hwanggeunchul/HwanggeunchulUniformRig.tscn",
 	"인베이전": "res://characters/invasion/InvasionRig.tscn",
@@ -126,7 +126,7 @@ const DEX_MAPS := {
 const STORY_EPISODES := [
 	{"id": "ep1", "name": "EP.1-첫 임무", "scene": "res://ui/story/StoryScene1.tscn"},
 	{"id": "ep2", "name": "EP.2-악플러", "scene": "res://ui/story/StoryScene13.tscn"},
-	{"id": "ep3", "name": "에피소드 3", "scene": ""},
+	{"id": "ep3", "name": "EP.3-지하철 아저씨", "scene": "res://ui/story/StoryScene23.tscn"},
 	{"id": "ep4", "name": "에피소드 4", "scene": ""},
 	{"id": "ep5", "name": "에피소드 5", "scene": ""},
 	{"id": "ep6", "name": "에피소드 6", "scene": ""},
@@ -167,6 +167,9 @@ var story_enemy_hp_scale: float = 1.0
 var story_enemy_damage_scale: float = 1.0
 ## 스토리 상대 AI의 솜씨. 1.0 = 평소 대전 AI 그대로, 0.0 = 아주 둔함(반응 느리고 거의 안 막는다)
 var story_ai_skill: float = 1.0
+## 켜면 스토리 상대가 **주인공 궁극기가 켜져 있는 동안 계속 달아난다**(2026-10-10 사용자 —
+## 경찰이 경봉을 뽑으면 악플러가 도망간다). 장면의 `battle_enemy_flees_ultimate`가 넣어 준다
+var story_enemy_flees_ultimate: bool = false
 ## 스토리 전투에서 주인공 2번 스킬을 갈아 끼울 스킬 씬(비면 캐릭터 씬 그대로) — `StoryFadeScene.battle_p1_skill2`가 넣는다
 var story_p1_skill2: String = ""
 ## 이 라운드 수를 먼저 따내면 최종 승리 (예: 2 = 3판2선승제)

@@ -19,6 +19,7 @@ config/icon="res://icon.ico"
 
 GameState="*res://GameState.gd"
 SceneTransition="*res://ui/SceneTransition.gd"
+UiSound="*res://ui/UiSound.gd"
 
 [display]
 

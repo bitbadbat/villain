@@ -28,14 +28,18 @@ extends Node2D
 @export var debug_story_skip_key: bool = false
 
 ## **스토리 전투를 이겼을 때도 승리 → 패배 → 연행 연출을 보여줄지**(2026-10-08 사용자, 악플러 편).
-## 평소 스토리 전투는 "승리!" 띠 하나만 지나가고 바로 다음 이야기로 넘어간다 — 그게 기본이다.
+## 기본은 꺼짐 — **화면이 까매졌다가 바로 다음 이야기로** 넘어간다(2026-10-10 사용자).
 ## 켜면 대전과 **같은 연출 한 벌**을 보여준 뒤 다음 장면으로 간다.
 ## `S`로 건너뛸 때도 똑같이 나온다 — 연출을 손보려고 켜 둔 것이라 건너뛰면 안 보이면 의미가 없다
 @export var story_match_ending: bool = false
+## 스토리 전투를 이긴 뒤 화면이 **까매지는 데 걸리는 시간**(초).
+## 다음 장면은 검은 화면에서 제 `fade_in_time`으로 밝아지므로 여기서는 덮는 시간만 정한다
+@export var story_win_fade_time: float = 0.6
 
 ## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
 const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 const DEBUG_GRID := preload("res://maps/DebugGrid.gd")
+const POPUP_INTRO := preload("res://maps/PopupIntro.gd")
 ## 대전 최종 승부 연출 — 승리·패배 화면 / 연행 장면(둘 다 레이어 25)
 const MATCH_ENDING_SCENE := "res://ui/result/MatchEnding.tscn"
 const ARREST_SCENE := "res://ui/result/ArrestScene.tscn"
@@ -101,6 +105,8 @@ static var show_debug_grid: bool = false
 @export_group("화면 효과")
 ## 화면 전체 색보정(`maps/ScreenGrade.gd`)을 이 맵에 깔지. 설정의 `GameState.screen_effects_enabled`가 꺼져 있으면 어차피 안 보인다
 @export var screen_grade_enabled: bool = true
+## 첫 라운드 시작 때 맵이 팝업북처럼 일어서는 연출(`maps/PopupIntro.gd`, 대전·스토리 전투). 끄면 바로 카운트다운
+@export var popup_intro_enabled: bool = true
 ## 이 맵의 색보정 스타일(`ScreenGradeStyle` .tres, `maps/grade/`). 비우면 `Default.tres`
 @export var screen_grade: Resource = null
 @export_group("")
@@ -143,6 +149,12 @@ func _ready() -> void:
 	if _attract:
 		_start_attract()
 		return
+	# 팝업북 시작 연출 — **첫 프레임이 그려지기 전에** 맵 그림을 눕혀 둔다(아래 await 전에)
+	var popup = null
+	if popup_intro_enabled and GameState.p1_round_wins + GameState.p2_round_wins == 0:
+		popup = POPUP_INTRO.new()
+		add_child(popup)
+		popup.prepare(self)
 	# 스토리 모드 한정: 캐릭터를 스폰하기도 전에 "주인공 VS 적" 매치업 화면부터 보여준다.
 	# GameState.p1/p2_character_path만으로 채우므로 Fighter가 없어도 상관없다
 	if GameState.game_mode == "story":
@@ -165,6 +177,9 @@ func _ready() -> void:
 	# 입력을 못 받게 한다 (여기서 안 얼리면 그 한 프레임 동안 is_active 기본값(true)이라
 	# 카운트다운이 뜨기도 전에 스킬이 나가버리는 틈이 생겼었다)
 	_freeze_controllers()
+	# 캐릭터·HUD도 눕힌다(캐릭터는 숨겨 뒀다가 자기 차례에 나타남) — 다음 프레임이 그려지기 전에
+	if popup != null:
+		popup.prepare_late()
 
 	# 스폰된 Fighter들의 _ready()가 끝날 때까지 한 프레임 기다렸다가 연결한다
 	await get_tree().process_frame
@@ -181,6 +196,8 @@ func _ready() -> void:
 	# 스토리 VS 화면이 **화면을 덮어 둔 채로** 끝난다 — 캐릭터가 다 자리잡은 지금 걷어낸다.
 	# 덮어 둔 게 없으면(대전 모드) 그냥 지나간다
 	await SceneTransition.uncover()
+	if popup != null and is_instance_valid(popup):
+		await popup.play()
 
 	var round_start: RoundStart = load("res://ui/RoundStart.tscn").instantiate()
 	add_child(round_start)
@@ -463,15 +480,29 @@ func _end_round(p1_won: bool, is_draw: bool) -> void:
 		or GameState.p2_round_wins >= GameState.rounds_to_win \
 		or GameState.draw_rounds >= GameState.draw_round_limit
 	if match_decided:
-		# 스토리 전투를 이겼으면 결과창 대신 라운드와 같은 "승리!" 띠를 띄우고 이야기로 넘어간다
+		# 스토리 전투를 이겼으면 결과창을 안 띄우고 곧장 이야기로 넘어간다
 		if p1_won and not is_draw and GameState.game_mode == "story" and GameState.story_next_scene != "":
-			# 이 맵에서 연출을 켜 뒀으면 띠 대신 대전과 같은 한 벌(승리 → 패배 → 연행)을 보여준다
+			# 이 맵에서 연출을 켜 뒀으면 대전과 같은 한 벌(승리 → 패배 → 연행)을 보여준다
 			if _wants_story_match_ending():
 				await _play_match_ending(true, false)
-			else:
-				await _play_round_banner(true, false)
-			if is_inside_tree():
-				_go_story_next()
+				if is_inside_tree():
+					_go_story_next()
+				return
+			# **기본은 띠도 연출도 없이 화면이 까매졌다가 넘어간다**(2026-10-10 사용자).
+			# 다음 장면(StoryFadeScene)이 검은 화면에서 스스로 밝아지므로 여기서는 덮기만 한다
+			_freeze_controllers()
+			if _combat_hud:
+				_combat_hud.visible = false
+			if is_instance_valid(_pause_button_node):
+				_pause_button_node.queue_free()
+			_pause_button_node = null
+			await _go_story_next_black()
+			return
+		# **마지막 판에도 띠가 먼저 지나간다**(2026-10-11 사용자: "2번째 판 이겼을 때도
+		# P1 혹은 P2 승리 나온 다음에 승패 연출 나오도록"). 전에는 끝나는 판만 띠를 건너뛰어서
+		# 누가 이겨 판이 끝났는지 알려 주는 띠 없이 곧장 연출로 넘어갔다
+		await _play_round_banner(p1_won, is_draw)
+		if not is_inside_tree():
 			return
 		# 대전(컴퓨터 상대 포함)은 결과창 전에 승리 → 패배 → 연행 연출을 보여주고, 결과창은 연행 장면 위 아래쪽에 띄운다
 		var cinematic: bool = _wants_match_ending()
@@ -655,6 +686,15 @@ func _go_story_next() -> void:
 		get_tree().change_scene_to_file(next_scene)
 	else:
 		push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
+
+## 위와 같은데 **화면을 까맣게 덮은 뒤** 넘어간다 — 스토리 전투를 이겼을 때 쓴다
+func _go_story_next_black() -> void:
+	var next_scene: String = GameState.story_next_scene
+	GameState.story_next_scene = ""
+	if not ResourceLoader.exists(next_scene):
+		push_warning("Stage: 스토리 다음 장면을 못 찾았다 — %s" % next_scene)
+		return
+	await SceneTransition.go_to_scene_through_black(next_scene, story_win_fade_time)
 
 ## ESC(ui_cancel)를 누르면 일시정지 메뉴를 띄운다. 이 함수 자체가 get_tree().paused일 때는
 ## 호출되지 않으므로(Stage는 process_mode를 안 바꿔서 기본값인 "멈추면 같이 멈춤"이라),
@@ -856,6 +896,9 @@ func _apply_story_handicap(fighter: Fighter) -> void:
 ## **1이면 평소 대전 AI 그대로**, 0이면 아래 "둔한 값"까지 쭉 끌어내린다.
 ## 값 하나로 반응속도·방어·회피·스킬 사용을 한꺼번에 움직여야 "조금만 약하게"가 쉬워진다
 func _tune_story_ai(ai: ClaudeAIController) -> void:
+	# ⚠️ **솜씨 검사보다 먼저 넣는다** — 아래에서 skill이 1이면 바로 돌아가기 때문에,
+	# 뒤에 두면 AI를 안 깎은 장면에서는 도망 설정이 통째로 빠진다
+	ai.flees_from_ultimate = GameState.story_enemy_flees_ultimate
 	var skill: float = clampf(GameState.story_ai_skill, 0.0, 1.0)
 	if is_equal_approx(skill, 1.0):
 		return

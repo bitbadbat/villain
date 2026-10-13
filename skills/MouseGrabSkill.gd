@@ -18,6 +18,8 @@ extends Skill
 @export var coil_width: float = 50.0
 ## 마우스를 손에 쥔 채 어깨 뒤로 젖히는 시간(초) — 이 시간이 지나야 마우스가 손을 떠난다
 @export var throw_windup: float = 0.14
+
+const THROW_SOUND: AudioStream = preload("res://audio/악플러/악플러 마우스 던 질 때.mp3")
 ## 뿌린 손이 제자리로 돌아오는 데 걸리는 시간(초)
 @export var throw_recover: float = 0.22
 ## 날아가는 마우스가 아래로 처지기 시작하는 지점 — 사거리의 몇 %를 지났을 때인지.
@@ -56,3 +58,5 @@ func _execute(fighter: Fighter) -> void:
 	grab.catch_radius = catch_radius
 	fighter.get_parent().add_child(grab)
 	grab.setup(fighter, throw_speed, max_range, reel_speed, damage)
+	# 던지는 소리는 젖혔다가 **마우스가 손을 떠나는 순간**에(시전자 자식 타이머 — 그 사이 사라지면 같이 사라진다)
+	Timers.after(fighter, maxf(throw_windup, 0.001), func(): Sfx.play(fighter, THROW_SOUND))

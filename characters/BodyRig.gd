@@ -293,7 +293,7 @@ var held_item_l_thrown: bool = false
 @export var dual_dash_run_pose: PackedScene = null
 @export var dual_dash_end_pose: PackedScene = null
 
-@export_group("박수 (층간소음 빌런 2번)")
+@export_group("박수 (층간소음 모자 2번)")
 ## 손이 **떨어졌을 때** 자세 씬과 **붙었을 때** 자세 씬. 둘 사이를 왔다 갔다 하며 박수가 된다
 @export var clap_open_pose: PackedScene = null
 @export var clap_close_pose: PackedScene = null
@@ -324,10 +324,10 @@ var held_item_l_thrown: bool = false
 ## 씬에 없는 조각은 안 건드린다
 @export var rest_pose: PackedScene = null
 
-@export_group("안고 있기 (층간소음 빌런)")
+@export_group("안고 있기 (층간소음 모자)")
 ## **한쪽 팔로 안고 있는 것**을 보일지. 리그에 `Carry` 노드를 자식으로 달아 두면 이 값에 따라 보였다 숨었다 한다.
 ## 쌍 악기(`held_item_l_armed`)와 달리 **자세는 하나도 안 바꾼다** — 그냥 들고 다니는 것일 뿐이다.
-## 층간소음 빌런 2번 스킬이 아이를 내려놓는 동안 이걸 꺼서 품에서 사라지게 한다
+## 층간소음 모자 2번 스킬이 아이를 내려놓는 동안 이걸 꺼서 품에서 사라지게 한다
 @export var carrying: bool = true
 ## 걸을 때 몸이 들썩이는 만큼 아이도 같이 들썩일지. 끄면 제자리에 고정된다
 @export var carry_follows_body: bool = true
@@ -651,7 +651,7 @@ var held_item_l_thrown: bool = false
 @export var body_turn_textures: Array[Texture2D] = []
 ## **마지막 단계(머리가 정면일 때)까지 몸통 그림을 쓸지.** 꺼 두면(기본) 머리가 정면인 순간에는
 ## 원래 몸통 그림으로 돌아간다 — 평소 몸통이 **정면**인 캐릭터(금쪽이·악플러)용이다.
-## 층간소음 빌런처럼 평소 몸통이 **측면**이면 켠다. 그러면 단계마다 body_turn_textures를 차례로 쓴다
+## 층간소음 모자처럼 평소 몸통이 **측면**이면 켠다. 그러면 단계마다 body_turn_textures를 차례로 쓴다
 @export var body_turn_full: bool = false
 ## 켜면 몸통 그림마다 불투명 영역 **높이**를 원래 몸통과 같게 배율을 맞춘다 — 캔버스·그린 크기가 원래 몸통과 다른 그림용
 ## (악플러: 원래 344x270, 측면 그림 887x887에 크게 그려짐, 2026-09-28). 금쪽이처럼 같은 캔버스로 그렸으면 끈다
@@ -1127,7 +1127,7 @@ var held_item_l_thrown: bool = false
 ## 왼손에 드는 물건걸이 — 오른손 것과 같은 방식으로 왼손을 따라간다(지하철 아저씨 검은 리코더).
 ## 평소에는 비어 있고, `held_item_l_armed`가 켜질 때만 자식 그림이 보인다
 @onready var _hand_l_hold: Node2D = get_node_or_null("HandLHold")
-## 한쪽 팔로 안고 있는 것(층간소음 빌런의 아이). 없는 리그면 null이라 그냥 넘어간다
+## 한쪽 팔로 안고 있는 것(층간소음 모자의 아이). 없는 리그면 null이라 그냥 넘어간다
 @onready var _carry: Node2D = get_node_or_null("Carry")
 ## 자전거 노드(있으면 촉법소년) — 돌진 중에만 보인다
 @onready var _bike: Sprite2D = get_node_or_null("Bike")
@@ -2488,12 +2488,20 @@ func _keep_air_swing_in_reach() -> void:
 		if off.length() - _air_reach_radius > far:
 			far = off.length() - _air_reach_radius
 			far_dir = off.normalized()
-	hand.position -= far_dir * far
+	# **복귀 구간(62% 뒤)에선 당기는 힘을 서서히 푼다**(2026-10-13 — 주정뱅이 3타 "끝에 술병이 톡 튄다").
+	# 끝까지 다 당기다가 모션이 끝나는 프레임에 한 번에 풀려 손·술병이 7~8px 앞으로 튀었다.
+	# 판정은 후리기(40~62%)에 끝나므로 복귀 중에 반원 밖으로 나가도 맞는 범위는 그대로다
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var keep: float = 1.0
+	if progress > ATTACK_STRIKE_END:
+		var r: float = clampf((progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END), 0.0, 1.0)
+		keep = 1.0 - r * r * (3.0 - 2.0 * r)
+	hand.position -= far_dir * far * keep
 	# 반원이라 뒤쪽(원 가운데보다 뒤)도 판정 밖 — 가장 뒤에 있는 모서리만큼 앞으로
 	var back: float = 0.0
 	for v in corners:
 		back = maxf(back, _air_reach_center.x - (hand.position.x + v.x))
-	hand.position.x += back
+	hand.position.x += back * keep
 
 ## 오른손에 든 그림 중 가장 큰 것(무기 본체). 없거나 안 보이면 null
 func _held_weapon_sprite() -> Sprite2D:
@@ -2601,6 +2609,10 @@ func _pose_attack_hand() -> void:
 	else:
 		# ③ 원래 자세로 복귀
 		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		# 공중 큰 휘두르기(주정뱅이 3타 포함)는 **점점 느려지며** 제자리에 닿는다 — 일정한 속도로 오면
+		# 술병이 빠르게 오다가 마지막 프레임에 딱 멈춰 "톡 튀는" 것처럼 보였다(2026-10-13). 다른 타는 그대로
+		if _attack_variant == AIR_SWING_VARIANT:
+			p = 1.0 - (1.0 - p) * (1.0 - p)
 		angle = lerpf(swing_deg, 0.0, p)
 		offset = slam_off.lerp(Vector2.ZERO, p)
 	var hand: Sprite2D = _attack_hand()
@@ -4803,7 +4815,7 @@ func _is_turn_texture(tex: Texture2D) -> bool:
 ## 걷기 들썩임·움찔 같은 앞선 자세 오프셋은 그대로 두고 제자리 차이만 더한다
 ## body_dir을 따로 주면 **몸통만 다른 쪽**을 보게 할 수 있다 —
 ## 뒤돌아보기는 "몸은 그대로, 머리만 반대쪽"이라 몸통까지 뒤집으면 안 된다.
-## 평소 몸통이 정면인 캐릭터는 뒤집혀도 티가 안 났지만, 층간소음 빌런처럼 **측면 몸통**이면
+## 평소 몸통이 정면인 캐릭터는 뒤집혀도 티가 안 났지만, 층간소음 모자처럼 **측면 몸통**이면
 ## 뒤돌아볼 때마다 몸이 홱 뒤집혀 보인다(2026-10-04 지적)
 func _set_head_frame(frame: int, dir: float, body_dir: float = NAN) -> void:
 	var tex: Texture2D = _turn_rest_texture() if frame == 0 else _turn_textures()[frame - 1]

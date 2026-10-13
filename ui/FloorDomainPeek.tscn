@@ -4,8 +4,8 @@
 [ext_resource type="Texture2D" uid="uid://bg2w4btyqlu2q" path="res://sprite/층간소음/궁극기벽지.png" id="1_wall"]
 [ext_resource type="Texture2D" uid="uid://df26qd6gjfh4u" path="res://sprite/층간소음/궁극기연출/열린문_0001_문틀.png" id="2_frame"]
 [ext_resource type="Texture2D" uid="uid://dilwr8w248p0n" path="res://sprite/층간소음/궁극기연출/열린문_0000_문.png" id="3_panel"]
-[ext_resource type="Texture2D" uid="uid://byiw814ew6cqr" path="res://sprite/층간소음/층간소음정면.png" id="4_face"]
-[ext_resource type="Texture2D" uid="uid://d6eh7e8qsd5u" path="res://sprite/층간소음/입벌리고있는층간소음.png" id="5_open"]
+[ext_resource type="Texture2D" uid="uid://dcfs6uomg8ibf" path="res://sprite/층간소음/궁극기연출입닫은버전.png" id="4_face"]
+[ext_resource type="Texture2D" uid="uid://c783tbsrbjdm8" path="res://sprite/층간소음/궁극기연출입벌린버전.png" id="5_open"]
 [ext_resource type="Texture2D" uid="uid://b4sqbvydv2wa1" path="res://sprite/층간소음/층간 소음몸정면.png" id="6_body"]
 [ext_resource type="PackedScene" uid="uid://dkd5b0gex52q0" path="res://maps/SpeechBubble.tscn" id="7_bubble"]
 [ext_resource type="Texture2D" uid="uid://dwk7vv1foy5vq" path="res://sprite/층간소음/층간소음아이정면.png" id="8_kid"]
@@ -62,7 +62,7 @@ flip_h = true
 [node name="DoorPanel" type="Sprite2D" parent="Root" unique_id=1575227793]
 z_index = 2
 texture_filter = 1
-position = Vector2(-125, 79)
+position = Vector2(-11, 113)
 scale = Vector2(0.7290361, 0.49076664)
 texture = ExtResource("3_panel")
 

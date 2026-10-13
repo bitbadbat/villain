@@ -17,8 +17,14 @@ extends Skill
 ## 지르는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작해진다). (1,1)이면 연출 없음
 @export var shout_squash: Vector2 = Vector2(1.15, 0.9)
 
+const SCREAM_SOUND: AudioStream = preload("res://audio/주정뱅이/주정뱅이 궁극기.mp3")
+## 소리를 끊는 시각(초)과 그 앞에서 줄이는 시간
+const SCREAM_CUT := 1.05
+const SCREAM_FADE := 0.15
+
 func _execute(fighter: Fighter) -> void:
 	_play_shout_motion(fighter)
+	_play_scream_sound(fighter)
 	if cone_scene == null:
 		return
 
@@ -29,6 +35,18 @@ func _execute(fighter: Fighter) -> void:
 	cone.global_position = fighter.global_position + Vector2(mouth_offset.x * fighter.facing, mouth_offset.y)
 	cone.area_entered.connect(_on_cone_hit.bind(fighter))
 	cone.setup(fighter.facing, fighter.compute_damage(damage), fighter)
+
+## 괴성 소리 — 파일 **앞의 소리 지르는 부분만** 쓴다(2026-10-13 사용자).
+## 실측 파형: 0.1~0.9초가 고함, 0.9초부터 잦아들고 1.15초부터 다른 소리가 이어진다 → SCREAM_CUT에서 줄여 끈다.
+## ⚠️ 소리 파일을 바꾸면 다시 잴 것
+func _play_scream_sound(fighter: Fighter) -> void:
+	var player = Sfx.play(fighter, SCREAM_SOUND, 0.0, 1.0, 0.0)
+	if player == null:
+		return
+	var tween: Tween = player.create_tween()
+	tween.tween_interval(SCREAM_CUT - SCREAM_FADE)
+	tween.tween_property(player, "volume_db", -40.0, SCREAM_FADE)
+	tween.tween_callback(player.queue_free)
 
 ## 지르는 순간 스스로 부르르 떤다
 func _play_shout_motion(fighter: Fighter) -> void:
@@ -46,6 +64,11 @@ func _on_cone_hit(area: Area2D, screamer: Fighter) -> void:
 	var target := area.fighter as Fighter
 	if target == null:
 		return
-	target.apply_temp_multiplier("jump_multiplier", jump_multiplier, debuff_duration, true)   # 궁극기는 방어를 뚫는다(피해만 막힌다)
+	# **막으면 디버프도 안 걸린다**(2026-10-10 사용자 지시). 다른 궁은 "막아도 한 대는 남는다"고
+	# 방어를 뚫지만, 이 궁만은 예외로 뺐다 — 부채꼴이 넓고 8초짜리라 막아도 걸리면 손쓸 데가 없었다.
+	# `apply_temp_multiplier`가 막히면 false를 안 돌려주므로 **여기서 직접 물어본 뒤** 색도 같이 건너뛴다
+	if target.blocks_debuff(false):
+		return
+	target.apply_temp_multiplier("jump_multiplier", jump_multiplier, debuff_duration)
 	# 다리 풀린 느낌으로 보라색으로 물듦
 	target.set_tint("jump_debuff", Color(0.75, 0.6, 0.85), debuff_duration)

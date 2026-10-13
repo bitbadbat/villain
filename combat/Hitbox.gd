@@ -86,6 +86,10 @@ var hitstop_multiplier: float = 1.0
 var shake_multiplier: float = 1.0
 ## 이번 판정의 소리 음높이 — 콤보가 타마다 넣어준다(마무리 타는 낮게 = 묵직하게)
 var hit_sound_pitch: float = 1.0
+## 소리 파일의 일부만 쓸 때 — `hit_sound_from`초부터 틀어 `hit_sound_to`초에 끈다(0이면 끝까지).
+## 공용 펀치 파일에 펀치가 여러 번 들어 있어서 첫 번째만 쓰려고 만들었다(2026-10-13)
+var hit_sound_from: float = 0.0
+var hit_sound_to: float = 0.0
 ## 실제로 때린 몸 — 소환물이 쏜 투사체처럼 판정이 맵에 붙어 있어 부모로 못 찾을 때 쏜 쪽이 넣어 준다.
 ## 비워 두면 `get_attacker()`가 부모를 거슬러 올라가 찾는다. 카운터 반격이 누구에게 갈지 정하는 데 쓴다
 var attacker_body: Node = null
@@ -234,7 +238,18 @@ func _notify_blocked_by_guard() -> void:
 func _play_hit_sound() -> void:
 	if hit_sound == null or GameState.game_mode == "attract":
 		return
-	_SFX.play(self, hit_sound, hit_sound_volume_db, hit_sound_pitch)
+	var player = _SFX.play(self, hit_sound, hit_sound_volume_db, hit_sound_pitch)
+	if player == null:
+		return
+	if hit_sound_from > 0.0:
+		player.seek(hit_sound_from)
+	if hit_sound_to > hit_sound_from:
+		# 음높이만큼 빨리/느리게 흐르므로 실제 시간으로 바꿔서 끊는다. 끝 0.05초는 줄여서(뚝 끊기면 튄다)
+		var length: float = (hit_sound_to - hit_sound_from) / maxf(player.pitch_scale, 0.05)
+		var fade: Tween = player.create_tween()
+		fade.tween_interval(maxf(length - 0.05, 0.0))
+		fade.tween_property(player, "volume_db", -40.0, 0.05)
+		fade.tween_callback(player.queue_free)
 
 ## 방어에 막힌 자리에서 `GuardImpact`(파란 초승달 고리 + 판 + 번개 + 속도선)를 터뜨린다.
 ## 예전엔 "BLOCK" 글자 + 작은 파란 불꽃이었다(2026-10-10 사용자 레퍼런스로 교체).

@@ -18,6 +18,12 @@ extends Skill
 ## 떨리는 세기·빠르기는 리그 쪽(`BodyRig`의 `head_shake_*`)에서 조절한다
 @export var head_shake_time: float = 0.7
 
+## 쓰는 순간 소리 — 파일(2.9초)의 **앞 1초만** 쓴다(2026-10-13 사용자 "짧게").
+## 중간에 조용한 틈이 없어서, 0.9초의 큰 부분까지 듣고 줄여 끈다
+const RAGE_SOUND: AudioStream = preload("res://audio/악플러/악플러 열등감.mp3")
+const RAGE_SOUND_CUT := 1.0
+const RAGE_SOUND_FADE := 0.15
+
 ## 버프를 되돌릴 타이머 — 이 노드의 자식이라 캐릭터가 사라지면 같이 사라진다
 var _timer: Timer
 
@@ -28,6 +34,12 @@ func _execute(fighter: Fighter) -> void:
 	fighter.set_tint("rage", Color(1.0, 0.55, 0.35), duration)
 	# 공격력이 오른 동안 빨간 칼 아이콘이 몸 근처에서 떠오른다(끄는 건 _end_rage)
 	fighter.show_status_vfx(&"attack_up")
+	var sound = Sfx.play(fighter, RAGE_SOUND, 0.0, 1.0, 0.0)
+	if sound:
+		var fade: Tween = sound.create_tween()
+		fade.tween_interval(RAGE_SOUND_CUT - RAGE_SOUND_FADE)
+		fade.tween_property(sound, "volume_db", -40.0, RAGE_SOUND_FADE)
+		fade.tween_callback(sound.queue_free)
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("set_action_face"):
 		visual.set_action_face(true)

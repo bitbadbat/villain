@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://wby8cku0ihfj"
+path="res://.godot/imported/술병 깨 질 때.mp3-6a7b25c56b0cc8f5ee39007550f468d1.mp3str"
+
+[deps]
+
+source_file="res://audio/주정뱅이/술병 깨 질 때.mp3"
+dest_files=["res://.godot/imported/술병 깨 질 때.mp3-6a7b25c56b0cc8f5ee39007550f468d1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

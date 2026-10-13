@@ -33,6 +33,9 @@ extends Skill
 ## 타입을 안 붙인다 — 새로 만든 class_name은 전역 클래스 캐시가 갱신되기 전엔 못 찾아서
 ## 파싱 에러가 난다(Fighter._shield를 무타입으로 둔 것과 같은 이유). preload로 직접 가져온다
 const CHARGE_WIND := preload("res://skills/ChargeWind.gd")
+## 소리 — 일진 전용 파일이 없어서 재활용: 돌진 출발 = 대시, 들이받기 = 금쪽이 자전거 부딪힘
+const CHARGE_SOUND: AudioStream = preload("res://audio/대쉬.mp3")
+const SLAM_SOUND: AudioStream = preload("res://audio/금쪽이/금쪽이 자전거 부디칠 떄 소리.mp3")
 var _wind = null
 
 var _time_left: float = 0.0
@@ -51,6 +54,7 @@ func _execute(fighter: Fighter) -> void:
 	fighter.start_busy(charge_duration)
 	fighter.movement_override = self
 	_set_charge_look(fighter, true)
+	Sfx.play(fighter, CHARGE_SOUND)
 	# 몸 주위로 바람 줄이 흐른다 — 맵에 붙이고 시전자를 따라다니게 한다
 	var parent: Node = fighter.get_parent()
 	if parent != null:
@@ -105,6 +109,8 @@ func _enemy_in_range(fighter: Fighter) -> Fighter:
 func _slam(fighter: Fighter, enemy: Fighter) -> void:
 	# pop_override 0: 넉백에 이미 뜨는 힘이 들어 있으므로 기본 팝업을 얹지 않는다
 	enemy.take_damage(fighter.compute_damage(damage), Vector2(launch_push * _direction, -launch_speed), 0.0)
+	# 막혀도 부딪치긴 했으니 소리는 낸다(막힌 건 패링 소리가 따로 겹친다)
+	Sfx.play(fighter, SLAM_SOUND)
 	# 가드로 막혔으면 아예 안 뜨고 굳지도 않는다
 	if enemy.is_guarding:
 		_squash(fighter)

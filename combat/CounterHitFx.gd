@@ -12,6 +12,7 @@ extends Node2D
 
 const SHADER: Shader = preload("res://combat/CounterHitBlur.gdshader")
 const FONT: Font = preload("res://fonts/Jua-Regular.ttf")
+const SOUND: AudioStream = preload("res://audio/카운터.mp3")
 
 ## 노드 이름 — 씬에 하나만 두려고 이 이름으로 찾는다
 const NODE_NAME := "CounterHitFx"
@@ -134,6 +135,8 @@ func play(victim: Node2D, attacker: Node2D = null) -> void:
 		return
 	_start_us = Timers.now_usec()
 	_running = true
+	# 슬로가 걸려도 소리는 제 빠르기로 — Sfx는 Engine.time_scale에 안 묶인다
+	Sfx.play(victim, SOUND, 0.0, 1.0, 0.0)   # 맞은 자리에서(좌우)
 	_start_freeze()
 	_trail_until_us = Timers.now_usec() + int(TRAIL_TIME * 1000000.0)
 	_focus_fighters()

@@ -9,6 +9,10 @@
 [ext_resource type="Script" path="res://skills/CatHouseSkill.gd" id="6"]
 [ext_resource type="Script" path="res://skills/CatSelectSkill.gd" id="8"]
 [ext_resource type="Script" path="res://skills/CatUltimate.gd" id="9"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/고양이아주머니_기본공격.ogv" id="vid_atk"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/고양이집짓기.ogv" id="vid_house"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/고양이고르기.ogv" id="vid_pick"]
+[ext_resource type="VideoStream" path="res://sprite/도감/영상/고양이대작전.ogv" id="vid_ult"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
 radius = 20.0
@@ -39,6 +43,8 @@ shape = SubResource("CapsuleShape2D_hurt")
 
 [node name="BasicAttack" type="Node" parent="."]
 script = ExtResource("3")
+description = "손바닥으로 3연타. 마지막 타에 멀리 날린다."
+demo_video = ExtResource("vid_atk")
 air_swing_enabled = true
 windup = 0.096
 swing_duration = 0.24
@@ -65,19 +71,22 @@ shape = SubResource("RectangleShape2D_hitbox")
 
 [node name="Skill1" type="Node" parent="."]
 script = ExtResource("6")
+demo_video = ExtResource("vid_house")
 cooldown = 15.0
 skill_name = "고양이 집 짓기"
 description = "앞에 망치로 고양이 집을 짓는다(2초, 슈퍼아머). 다 지으면 고른 고양이가 나오고 7초마다 한 마리씩 더 나온다. 집은 부술 수 있다"
 
 [node name="Skill2" type="Node" parent="."]
 script = ExtResource("8")
+demo_video = ExtResource("vid_pick")
 cooldown = 0.3
 skill_name = "고양이 고르기"
 description = "집에서 나올 고양이를 검은 고양이, 주황 고양이, 흰 고양이 순서로 바꾼다"
 
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("9")
+demo_video = ExtResource("vid_ult")
 cooldown = 45.0
 skill_name = "고양이 대작전"
-description = "고른 고양이에 따라 다르다. 검은 고양이: 겨드랑이에 끼고 기본공격으로 똥 유탄 5발(범위 피해). 주황 고양이: 라운드 끝까지 고양이 옷을 입고 스킬을 못 쓰는 대신 기본공격이 세지고 빨라지며(3타는 머리를 잡아 등 뒤로 패대기), 대시가 빨리 돌고 받는 피해가 줄어든다. 흰 고양이: 그 자리에서 최대 체력의 30%를 회복한다"
+description = "고른 고양이에 따라 갈린다. 검은: 평타가 똥 유탄 5발이 된다. 주황: 고양이 옷을 입어 평타가 세진다. 흰: 체력을 회복한다."
 start_on_cooldown = true

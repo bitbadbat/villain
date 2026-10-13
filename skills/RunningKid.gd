@@ -1,7 +1,7 @@
 class_name RunningKid
 extends Hitbox
 
-## 내려놓은 **아이**. 층간소음 빌런 2번 스킬(`KidRushSkill`)이 바닥에 놓으면
+## 내려놓은 **아이**. 층간소음 모자 2번 스킬(`KidRushSkill`)이 바닥에 놓으면
 ## 앞으로 **쿵쿵 뛰어갔다가** 돌아와 엄마 품으로 들어간다.
 ##
 ## 흐름은 세 토막이다.

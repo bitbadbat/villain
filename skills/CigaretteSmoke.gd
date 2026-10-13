@@ -28,6 +28,10 @@ extends Hitbox
 ## 너무 세게 주면 상대가 연기 밖으로 밀려나 한 번밖에 못 맞는다
 @export var knockback_push: float = 95.0
 @export var knockback_lift: float = 35.0
+## 맞은 캐릭터를 **기본공격 3타처럼 날려 보낸다**(기절한 채 돌며 날아가 바닥·벽에 튕김, 2026-10-13 사용자 "넉백 엄청 되고 날라가게").
+## 세기는 시전자 기본공격의 3타 값(`finisher_launch_*`)에 launch_speed_scale을 곱한다. 방어·슈퍼아머면 안 날아간다
+@export var launch_on_hit: bool = true
+@export var launch_speed_scale: float = 1.5
 ## 연기 색
 @export var smoke_color: Color = Color(0.72, 0.73, 0.75, 0.55)
 ## 입 바로 앞의 막 뿜은 연기 색(더 하얗고 진하다) — 멀어질수록 smoke_color로 바뀐다
@@ -55,6 +59,9 @@ var _shape: CollisionShape2D = null
 var _clock: float = 0.0
 var _last_hit_at: Dictionary = {}
 
+## 날아가는 이펙트 — 기본공격 3타·지하철 반격과 같은 것
+const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
+
 ## 스킬이 스폰 직후 부른다. 입 위치는 캐릭터 원점 기준 오프셋(x는 바라보는 방향으로 자동 반전)
 func setup(caster: Fighter, mouth_offset: Vector2, dmg: int, tick: float, life: float) -> void:
 	_caster = caster
@@ -69,8 +76,37 @@ func setup(caster: Fighter, mouth_offset: Vector2, dmg: int, tick: float, life: 
 	if _shape != null and _shape.shape is RectangleShape2D:
 		(_shape.shape as RectangleShape2D).size = Vector2(reach, spread * 2.0)
 	_follow_caster()
+	if launch_on_hit and not connected.is_connected(_launch_victim):
+		connected.connect(_launch_victim)
 	monitoring = true
 	monitorable = true
+
+## 맞은 캐릭터를 3타처럼 날린다 — 연기를 뿜는 쪽(시전자가 바라보는 방향)으로
+func _launch_victim(victim: Node) -> void:
+	if not (victim is Fighter) or not is_instance_valid(victim) or not is_instance_valid(_caster):
+		return
+	var target: Fighter = victim
+	if target.is_guarding:
+		return
+	var dir: float = signf(_caster.facing) if not is_zero_approx(_caster.facing) else 1.0
+	var ba: Node = _caster.basic_attack
+	var speed: float = _finisher_value(ba, "finisher_launch_speed", 535.0) * launch_speed_scale
+	var pop: float = _finisher_value(ba, "finisher_launch_pop", 220.0)
+	var stun: float = _finisher_value(ba, "finisher_launch_stun", 0.4)
+	var turns: float = _finisher_value(ba, "finisher_tumble_turns", 1.0)
+	var max_scale: float = _finisher_value(ba, "finisher_max_scale", 2.0)
+	var parent: Node = target.get_parent()
+	if parent != null:
+		var trail = LAUNCH_TRAIL.new()
+		parent.add_child(trail)
+		trail.setup(target, Vector2(dir, -0.35))
+	target.launch_finisher(dir, speed, pop, stun, turns, max_scale)
+
+func _finisher_value(ba: Node, key: String, fallback: float) -> float:
+	if ba == null:
+		return fallback
+	var v = ba.get(key)
+	return float(v) if v != null else fallback
 
 func _process(delta: float) -> void:
 	_clock += delta

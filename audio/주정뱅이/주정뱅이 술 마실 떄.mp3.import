@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://ck5c7s6b7ytfr"
+path="res://.godot/imported/주정뱅이 술 마실 떄.mp3-33848c5a8d0a02a7950968f7d10b298a.mp3str"
+
+[deps]
+
+source_file="res://audio/주정뱅이/주정뱅이 술 마실 떄.mp3"
+dest_files=["res://.godot/imported/주정뱅이 술 마실 떄.mp3-33848c5a8d0a02a7950968f7d10b298a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

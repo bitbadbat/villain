@@ -28,6 +28,8 @@ extends Skill
 ## 토하기 전 **차지**(초) — 토 표정 + 꿀꺽 움찔 뒤에 나간다(2026-10-10, 혈사포처럼 "즉발 말고"). 그동안 걸을 수는 있고
 ## 다른 스킬·평타는 막힌다. 나가는 순간의 자리·방향으로 쏜다. 0이면 바로(2026-10-10 사용자 "딜레이 없이 바로" — 지금 0)
 @export var charge_time: float = 0.0
+
+const VOMIT_SOUND: AudioStream = preload("res://audio/주정뱅이/주정뱅이 토.mp3")
 ## 차지 때 몸이 움찔하는 정도(BodyRig.play_squash) — 볼에 머금는 느낌
 @export var charge_squash: Vector2 = Vector2(1.1, 0.9)
 
@@ -77,6 +79,8 @@ func _fire(fighter: Fighter, stacks: int, length: float, height: float, damage: 
 		return
 	if fighter.is_grabbed:
 		return
+	# 기둥이 실제로 나가는 순간에(차지가 있으면 그 뒤에)
+	Sfx.play(fighter, VOMIT_SOUND)
 	var beam: VomitBeam = beam_scene.instantiate()
 	fighter.get_parent().add_child(beam)
 	beam.global_position = fighter.global_position + spawn_offset(stacks, fighter.facing)

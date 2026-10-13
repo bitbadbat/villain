@@ -1,24 +1,25 @@
 [gd_scene load_steps=37 format=3 uid="uid://buypdf5wmusqa"]
 
 [ext_resource type="PackedScene" uid="uid://bkl88t3afdekk" path="res://characters/BodyRig.tscn" id="1_rig"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음얼굴찐.png" id="2_head"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음새로운버전.png" id="2_head"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/완전측면층간소음몸통.png" id="3_body"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음발.png" id="4_foot"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseRestPose.tscn" id="6_pose"]
 [ext_resource type="Script" path="res://characters/EyeBlink.gd" id="99_blink"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아들.png" id="K_HEAD"]
+[ext_resource type="Texture2D" uid="uid://dsiutn8vj4g61" path="res://sprite/층간소음/눈감은모습.png" id="98_shut"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/시무룩한아이.png" id="K_HEAD"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아들몸.png" id="K_BODY"]
 [ext_resource type="Texture2D" path="res://sprite/body/손.png" id="K_HAND"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseGuardPose.tscn" id="8_guard"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseClapOpenPose.tscn" id="9_clapopen"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseClapClosePose.tscn" id="10_clapclose"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/웃는모습.png" id="11_smile"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음새로운버전미소.png" id="11_smile"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음아이울음.png" id="12_cry"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/FloorNoiseHugPose.tscn" id="13_hug"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/우쭈쭈층간소음.png" id="14_coo"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/머리45.png" id="15_h45"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/머리반정면.png" id="16_h34"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/층간소음정면.png" id="17_hfront"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/머리정면.png" id="17_hfront"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/몸45.png" id="18_b45"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/돌리기/몸반정면.png" id="19_b34"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/층간 소음몸정면.png" id="20_bfront"]
@@ -76,7 +77,7 @@ domain_jump_ready_pose = ExtResource("21_djr")
 domain_jump_peak_pose = ExtResource("22_djp")
 domain_jump_land_pose = ExtResource("23_djl")
 head_turn_textures = Array[Texture2D]([ExtResource("15_h45"), ExtResource("16_h34"), ExtResource("17_hfront")])
-head_turn_anchors = Array[Vector3]([Vector3(730, 642, 1140), Vector3(493, 468, 778), Vector3(525, 470, 777), Vector3(691, 671, 1190)])
+head_turn_anchors = Array[Vector3]([Vector3(730, 642, 1140), Vector3(372, 417, 690), Vector3(380, 408, 690), Vector3(391, 400, 690)])
 head_turn_faces_left = Array[bool]([false, false, false, false])
 head_turn_on_face = true
 body_turn_textures = Array[Texture2D]([ExtResource("18_b45"), ExtResource("19_b34"), ExtResource("20_bfront")])
@@ -125,6 +126,7 @@ texture = ExtResource("2_head")
 position = Vector2(323, 68)
 script = ExtResource("99_blink")
 eye_size = Vector2(170, 105)
+closed_texture = ExtResource("98_shut")
 
 [node name="Carry" type="Node2D" parent="."]
 z_index = 2

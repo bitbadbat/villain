@@ -8,10 +8,14 @@ extends Skill
 @export var spacing: float = 78.0
 @export var start_distance: float = 50.0
 
+## 개찰구를 세울 때(두 짝이어도 한 번)
+const SPAWN_SOUND: AudioStream = preload("res://audio/지하철 아저씨/지하철 아저씨 개찰구.mp3")
+
 func _execute(fighter: Fighter) -> void:
 	if turnstile_scene == null:
 		return
 	var parent: Node = fighter.get_parent()
+	Sfx.play(fighter, SPAWN_SOUND)
 	for i in range(count):
 		var obstacle: Node2D = turnstile_scene.instantiate()
 		# 개찰구 한 쌍의 날개가 가운데서 맞물리게 — 첫째는 먼 쪽을, 둘째는 가까운 쪽을 가리킨다.

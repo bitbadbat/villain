@@ -8,12 +8,14 @@ extends Skill
 
 const CAT_HOUSE := preload("res://skills/CatHouse.gd")
 const LAND_DUST := preload("res://combat/LandDust.gd")
+## 망치질하는 동안(6.5초짜리라 다 짓거나 끊기면 줄여 끈다)
+const BUILD_SOUND: AudioStream = preload("res://audio/고양이 아줌마/고양이 아줌마 집 짓기.mp3")
 
 ## 짓는 시간(초)
 @export var build_time: float = 2.0
 ## 집 가운데가 캐릭터에서 앞으로 떨어진 거리(px)
 @export var place_distance: float = 62.0
-@export var house_hp: int = 40
+@export var house_hp: int = 10
 @export var spawn_interval: float = 7.0
 ## 맵에 이 캐릭터의 고양이가 이만큼 있으면 집이 더 안 내보낸다
 @export var max_cats: int = 4
@@ -31,6 +33,8 @@ var _dir: float = 1.0
 var _time: float = 0.0
 var _next_hit: float = 0.0
 var _hammer_period: float = 0.4
+## 망치질 소리 — 타입 없이(다 울려 지워진 플레이어가 남아 있을 수 있다)
+var _build_sound = null
 
 func can_use() -> bool:
 	if not super():
@@ -64,6 +68,7 @@ func _execute(fighter: Fighter) -> void:
 			_hammer_period = maxf(float(period), 0.05)
 	_next_hit = _hammer_period
 	_place_house(fighter)
+	_build_sound = Sfx.play(fighter, BUILD_SOUND, 0.0, 1.0, 0.0)
 
 ## 집 가운데가 올 x — 앞이 벽이면 벽 앞까지 당긴다. 바라보는 쪽은 `_dir`이 아니라 지금 facing으로 본다(can_use에서도 부른다)
 func _house_x(fighter: Fighter) -> float:
@@ -152,6 +157,11 @@ func _complete() -> void:
 ## 끝내고(다 지었든 끊겼든) 이동 권한·행동 잠금·자세·슈퍼아머를 되돌린다
 func _finish() -> void:
 	_building = false
+	if is_instance_valid(_build_sound):
+		var fade: Tween = _build_sound.create_tween()
+		fade.tween_property(_build_sound, "volume_db", -40.0, 0.12)
+		fade.tween_callback(_build_sound.queue_free)
+	_build_sound = null
 	if is_instance_valid(_house):
 		_house.cancel_build()
 	_house = null

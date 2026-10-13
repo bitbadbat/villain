@@ -153,6 +153,7 @@ func _update_dash(fighter: Fighter, delta: float) -> void:
 func _enemy_in_path(fighter: Fighter) -> Fighter:
 	var lo: float = minf(_prev_x, fighter.global_position.x + _dir * hit_range_x)
 	var hi: float = maxf(_prev_x, fighter.global_position.x + _dir * hit_range_x)
+	Fighter.debug_hit_rect(Rect2(lo, fighter.global_position.y - hit_range_y, hi - lo, hit_range_y * 2.0))
 	for n in get_tree().get_nodes_in_group("fighters"):
 		var f := n as Fighter
 		if f == null or f == fighter or f.current_hp <= 0:

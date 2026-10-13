@@ -107,13 +107,20 @@ var _external_hit: bool = false
 ## 평타가 맞았을 때 나는 소리. 비면 공용 펀치 소리(`DEFAULT_PUNCH_SOUND`)를 쓴다 —
 ## 무기 든 캐릭터는 여기에 자기 소리를 넣으면 된다. 판정에 `hit_sound`가 이미 있으면 그쪽이 먼저다
 @export var punch_sound: AudioStream
-## 마무리 타 소리 음높이(1보다 낮을수록 묵직하다). 1·2타는 1
-@export var finisher_sound_pitch: float = 0.78
+## 마무리 타(3타)가 맞았을 때 나는 소리. 비면 공용 3타 소리(`DEFAULT_FINISHER_SOUND`)
+@export var finisher_sound: AudioStream
+## 3타 소리 크기 보정(dB) — 캐릭터별로 더 줄이거나 키울 때만. 기본 크기는 `Sfx.GAIN_DB` 표가 맞춘다
+@export var finisher_sound_volume_db: float = 0.0
+## 마무리 타 소리 음높이(1보다 낮을수록 묵직하다). 1·2타는 1.
+## 3타 전용 소리가 생겨서(2026-10-13) 1로 올렸다 — 예전엔 펀치 소리를 0.78로 낮춰 3타처럼 들리게 했다
+@export var finisher_sound_pitch: float = 1.0
 ## 이만큼 맞히면 손에 든 무기가 부서진 그림으로 바뀐다(주정뱅이 소주병 -> 깨진 소주병). 0이면 안 부서진다.
 ## 맞힌 횟수만 세고 헛친 건 안 센다. 라운드가 바뀌면 씬이 새로 만들어지면서 0부터 다시 센다
 @export var break_after_hits: int = 0
 ## 부서진 뒤로 갈아끼울 그림. 원래 그림과 캔버스 크기가 같아야 손에 쥔 자리가 안 어긋난다
 @export var broken_item_texture: Texture2D
+## 부서지는 순간 나는 소리(주정뱅이 술병 깨지는 소리). 비면 무음
+@export var break_sound: AudioStream
 ## 부서지는 순간 명중 지점에 터뜨릴 파편 장면과 개수 (주정뱅이는 유리조각 5개)
 @export var break_debris_scene: PackedScene
 @export var break_debris_count: int = 5
@@ -159,6 +166,10 @@ var _external_hit: bool = false
 @export var spin_flurry_knockback: Vector2 = Vector2(30, 0)
 ## 도는 동안 회전 축(몸 앞) 둘레에 점프 바람 줄기(combat/JumpWind.gd)를 돌아가며 뿌린다 — 금쪽이 자전거 바람과 같은 그림(2026-10-01 사용자 요청)
 @export var spin_wind: bool = true
+## 도는 동안 나는 소리(악플러 키보드 회전). 비면 무음. 회전이 끝나면 줄여 끈다
+@export var spin_flurry_sound: AudioStream
+## 소리를 파일의 몇 초부터 틀지 — 악플러 소리는 앞 1초가 작아서 1.1초부터(2026-10-13 사용자)
+@export var spin_flurry_sound_from: float = 0.0
 ## 바람 줄기를 몇 초마다 하나씩 뿌릴지
 @export var spin_wind_interval: float = 0.05
 ## 회전 축(캐릭터 원점 기준, x는 바라보는 쪽 자동반전) — 리그 fan_hand_pos와 맞춤
@@ -233,7 +244,19 @@ const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 const JUMP_WIND := preload("res://combat/JumpWind.gd")
 const SLASH_ARC := preload("res://combat/SlashArc.gd")
 ## 평타 공용 펀치 소리(`punch_sound`가 비었을 때)
-const DEFAULT_PUNCH_SOUND := "res://Sound/펀치피격.wav"
+const DEFAULT_PUNCH_SOUND := "res://audio/punch.mp3"
+## ⚠️ `punch.mp3`는 22초짜리에 **펀치가 9번** 들어 있다 — 통째로 틀면 맞을 때마다 펀치가 줄줄이 이어진다.
+## 실측 파형으로 첫 펀치(0.2~0.6초)만 쓴다. 파일을 바꾸면 다시 잴 것
+const PUNCH_SOUND_FROM := 0.2
+const PUNCH_SOUND_TO := 0.6
+## 평타 공용 3타 소리(`finisher_sound`가 비었을 때)
+const DEFAULT_FINISHER_SOUND := "res://audio/3타 펀치.mp3"
+## 1·2타 소리(_ready에서 정해진 판정 소리) — 3타가 끝나면 이걸로 되돌린다
+var _normal_hit_sound: AudioStream = null
+## 회전 난무 소리(도는 동안만). 타입 없이 — 다 울려 지워진 플레이어가 들어 있을 수 있다
+var _spin_sound = null
+## 평타가 빗나갔을 때 둘 중 하나를 무작위로(2026-10-13 사용자). 매번 읽으면 렉이 나서 preload로 붙든다
+const WHIFF_SOUNDS: Array[AudioStream] = [preload("res://audio/헛스윙.mp3"), preload("res://audio/헛스윙2.mp3")]
 
 ## --- 드롭킥 마무리 (촉법소년 3타) ---
 ## 켜면 마무리 타가 "뛰어올라 두 발로 차고 넘어졌다 일어나는" 드롭킥이 된다.
@@ -287,6 +310,10 @@ var _air_used: bool = false
 var _air_now: bool = false
 ## 공중 휘두르기 동안 갈아 끼운 반원 판정 — 끝나면 원래 판정(_air_saved_shape)으로 되돌린다
 var _air_saved_shape: Shape2D = null
+## 마무리를 공중 휘두르기 모션으로 치는 중(final_air_motion) — 판정도 모션에 맞춘 반원으로 바꿔 끼운다
+var _final_air_now: bool = false
+## 원래 땅 판정의 앞 끝(range + 반폭). 판정 모양을 바꿔 끼우기 전에 한 번 재 둔다
+var _ground_reach: float = -1.0
 ## 이번 스윙이 건물만 맞혔는지 — 판정 창이 끝날 때 "건물 명중"으로 정리한다(그 사이 적이 맞으면 적이 우선)
 var _building_pending: bool = false
 ## 이어서 건물을 친 횟수 — BUILDING_HIT_LIMIT에 닿으면 마무리 쿨
@@ -429,6 +456,10 @@ func _ready() -> void:
 	_base_hitstop = hitbox.hitstop_time if hitbox else 0.0
 	if hitbox and hitbox.hit_sound == null:
 		hitbox.hit_sound = punch_sound if punch_sound != null else load(DEFAULT_PUNCH_SOUND)
+	_normal_hit_sound = hitbox.hit_sound if hitbox else null
+	_apply_punch_trim()
+	if finisher_sound == null:
+		finisher_sound = load(DEFAULT_FINISHER_SOUND)
 	super()   # start_on_cooldown 처리 (기본공격은 꺼져 있지만 규칙을 깨지 않는다)
 	# 명중하는 순간(스윙 진행 중이면) 곧바로 "맞음"으로 판정한다
 	hitbox.connected.connect(_on_hitbox_connected)
@@ -573,6 +604,8 @@ func _count_hit_for_break() -> void:
 	_broken = true
 	_swap_to_broken()
 	_spawn_break_debris()
+	if is_instance_valid(_fighter):
+		Sfx.play(_fighter, break_sound)
 
 ## 손에 든 무기 그림을 부서진 것으로 갈아끼운다 (리그에 그 기능이 없으면 그냥 넘어간다)
 func _swap_to_broken() -> void:
@@ -692,12 +725,15 @@ func _process(delta: float) -> void:
 			hitbox.global_position = _fighter.global_position + Vector2(range * _fighter.facing, 0.0)
 			if _air_now:
 				hitbox.global_position = _fighter.global_position + Vector2(air_swing_center.x * _fighter.facing, air_swing_center.y)
+			elif _final_air_now:
+				hitbox.global_position = _fighter.global_position
 		_active_left = maxf(_active_left - delta, 0.0)
 		if _active_left <= 0.0 and _swinging and not _resolved:
 			if _building_pending:
 				_resolve_building_hit()
 			else:
 				_resolve(false)
+				Sfx.play(self, WHIFF_SOUNDS.pick_random())
 	# 모션이 끝나는 순간 눌러 둔 다음 타를 낸다 — Fighter 길목(use_basic_attack)을 다시 타서 맞는 중·잡힘·방어 등은 거기서 걸러진다
 	if _anim_left > 0.0:
 		_anim_left = maxf(_anim_left - delta, 0.0)
@@ -782,6 +818,14 @@ func _resolve(hit: bool) -> void:
 		# 헛발 → 헛발 전용 쿨(miss_cooldown, 없으면 기본 cooldown) + 1타 리셋
 		_reset(_effective_miss_cooldown())
 
+## 지금 판정 소리가 공용 펀치 파일이면 첫 펀치만 쓰게 자른다. 다른 소리면 통째로
+func _apply_punch_trim() -> void:
+	if hitbox == null:
+		return
+	var trim: bool = hitbox.hit_sound != null and hitbox.hit_sound.resource_path == DEFAULT_PUNCH_SOUND
+	hitbox.hit_sound_from = PUNCH_SOUND_FROM if trim else 0.0
+	hitbox.hit_sound_to = PUNCH_SOUND_TO if trim else 0.0
+
 ## 판정이 켜지기 전(예비동작)에 맞았다 — 이번 타는 안 나가고 헛친 것으로 정리한다(`Fighter._interrupt_attack`이 부른다).
 ## 판정이 이미 켜졌으면 그대로 둔다 — 같은 순간 서로 때린 건 둘 다 맞는다(상쇄)
 func interrupt_by_hit() -> void:
@@ -847,7 +891,7 @@ func _fire(fighter: Fighter, step: int) -> void:
 		var fin_len: float = _final_swing_duration(step, visual)
 		if fin_len <= 0.0:
 			fin_len = float(visual.get("attack_duration"))
-		visual.play_air_swing(fin_len, Vector2.ZERO, range + _hit_half_width())
+		visual.play_air_swing(fin_len, Vector2.ZERO, _final_air_reach())
 		if visual.has_method("play_swing_trail"):
 			visual.play_swing_trail()
 	elif visual and visual.has_method("play_attack_swing"):
@@ -925,6 +969,9 @@ func _fire(fighter: Fighter, step: int) -> void:
 	# 마무리 타는 가로 넉백에 finisher_distance_scale을 곱해 더 멀리 날린다
 	var push_scale: float = finisher_distance_scale if is_final else 1.0
 	hitbox.hit_sound_pitch = finisher_sound_pitch if is_final else 1.0
+	hitbox.hit_sound = finisher_sound if is_final else _normal_hit_sound
+	hitbox.hit_sound_volume_db = finisher_sound_volume_db if is_final else 0.0
+	_apply_punch_trim()
 	if d != null:
 		hitbox.damage = fighter.compute_basic_damage(d.damage + bonus_damage)
 		hitbox.knockback = Vector2(d.knockback.x * fighter.facing * push_scale, d.knockback.y)
@@ -963,6 +1010,8 @@ func _fire(fighter: Fighter, step: int) -> void:
 	hitbox.global_position = fighter.global_position + Vector2(range * fighter.facing, 0.0)
 	if _air_now:
 		_start_air_shape(fighter)
+	elif final_air_motion and is_final and _hit_data(step) == null:
+		_start_final_air_shape(fighter)
 	# **부가 장치가 이 타를 가져갔으면 몸 판정은 안 켠다** — 날아간 물건이 대신 때린다
 	# (지하철 아저씨: 1타에 리코더를 던지고, 3타에 돌아오는 길이 판정이 된다).
 	# 피해·넉백·띄우기는 위에서 히트박스에 다 넣어 뒀고, 날아가는 물건이 그걸 그대로 베껴 간다
@@ -1259,6 +1308,11 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 	hitbox.source_fighter = fighter
 	hitbox.repeat_interval = spin_flurry_interval
 	hitbox.debris_enabled = false
+	# 바로 앞 타가 3타였으면 판정 소리가 3타 소리로 남아 있다 — 난무는 평소 펀치로
+	hitbox.hit_sound = _normal_hit_sound
+	hitbox.hit_sound_pitch = 1.0
+	hitbox.hit_sound_volume_db = 0.0
+	_apply_punch_trim()
 	hitbox.global_position = fighter.global_position
 	hitbox.clear_repeat_state()
 	hitbox.monitoring = true
@@ -1269,6 +1323,9 @@ func _start_spin_flurry(fighter: Fighter) -> void:
 		visual.play_keyboard_fan(spin_flurry_duration)
 	_spin_wind_timer = 0.0
 	_spin_wind_angle = randf() * TAU
+	_spin_sound = Sfx.play(fighter, spin_flurry_sound, 0.0, 1.0, 0.0)
+	if _spin_sound and spin_flurry_sound_from > 0.0:
+		_spin_sound.seek(spin_flurry_sound_from)
 
 ## 회전 축 둘레를 도는 자리에서 접선 방향(도는 방향)으로 바람 줄기를 하나씩 뿌린다 — 맵에 붙여 제자리에 남는다
 func _update_spin_wind(delta: float) -> void:
@@ -1315,6 +1372,11 @@ func _end_spin_flurry() -> void:
 	_spin_shape_left = null
 	_spin_shape_facing = 0.0
 	_reset(effective_cooldown())
+	if is_instance_valid(_spin_sound):
+		var fade: Tween = _spin_sound.create_tween()
+		fade.tween_property(_spin_sound, "volume_db", -40.0, 0.15)
+		fade.tween_callback(_spin_sound.queue_free)
+	_spin_sound = null
 	var visual: Node = _fighter.get_node_or_null("Visual") if is_instance_valid(_fighter) else null
 	if visual and visual.has_method("end_keyboard_fan"):
 		visual.end_keyboard_fan()
@@ -1349,6 +1411,25 @@ func _hit_half_width() -> float:
 		return (shape_node.shape as CircleShape2D).radius * absf(shape_node.scale.x)
 	return 15.0
 
+## 마무리 공중 휘두르기 모션의 판정 반지름 = 원래 땅 판정의 앞 끝. 모양을 바꿔 끼우기 전에 재 둔 값을 쓴다
+func _final_air_reach() -> float:
+	if _ground_reach < 0.0 and _air_saved_shape == null:
+		_ground_reach = range + _hit_half_width()
+	return _ground_reach if _ground_reach > 0.0 else range + 15.0
+
+## 마무리를 공중 휘두르기 모션(머리 위까지 올려치기)으로 칠 때 판정도 그 모양으로 — 몸 중심에서 바라보는 쪽 반원,
+## 반지름은 원래 판정의 앞 끝(주정뱅이 55). 예전 몸 앞 작은 네모는 머리 위로 올라가는 술병을 못 덮었다(2026-10-11 사용자 결정)
+func _start_final_air_shape(fighter: Fighter) -> void:
+	var reach: float = _final_air_reach()
+	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D
+	if shape_node == null:
+		return
+	if _air_saved_shape == null:
+		_air_saved_shape = shape_node.shape
+	_final_air_now = true
+	hitbox.global_position = fighter.global_position
+	shape_node.shape = _make_front_half_circle(signf(fighter.facing) if fighter.facing != 0.0 else 1.0, reach)
+
 ## 공중 큰 휘두르기 판정 — 원래 판정 모양을 맡아 두고 바라보는 쪽 반원(air_swing_radius)을 끼운다.
 ## 회전 난무와 같은 반원 모양이지만 반지름이 따로다
 func _start_air_shape(fighter: Fighter) -> void:
@@ -1363,6 +1444,7 @@ func _start_air_shape(fighter: Fighter) -> void:
 ## 공중 큰 휘두르기를 정리한다 — 판정 모양을 원래대로. 판정 중(명중 콜백)일 수 있어 모양은 set_deferred로 바꾼다
 func _end_air_swing() -> void:
 	_air_now = false
+	_final_air_now = false
 	if _air_saved_shape == null:
 		return
 	var shape_node := hitbox.get_node_or_null("HitboxCollision") as CollisionShape2D

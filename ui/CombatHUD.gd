@@ -70,6 +70,60 @@ func _apply_panel_layout() -> void:
 func setup(p1: Fighter, p2: Fighter) -> void:
 	_p1_panel.bind(p1, false, 1)
 	_p2_panel.bind(p2, true, 2)
+	_p1 = p1
+	_p2 = p2
+
+## --- 콤보 팝업 자리 (2026-10-11 사용자) ---
+## **콤보는 콤보를 넣고 있는 쪽 초상화 옆**에 띄운다(데미지는 맞은 캐릭터 머리 위 뒤쪽 — `Hitbox._damage_popup_spot`).
+## - 판이 아래(대부분 맵): 초상화 아래는 화면 끝까지 58px뿐이라 **초상화 바깥 옆**(P1 왼쪽 / P2 오른쪽) — 땅보다 아래인 HUD 띠
+## - 판이 위(놀이터·악플러 집): **초상화 바로 아래**. P1 초상화 왼쪽엔 일시정지 버튼이 있다
+const _DAMAGE_POPUP_SCENE := preload("res://combat/DamagePopup.tscn")
+## 콤보 말풍선 폭(px) — 112에서 1.3배(2026-10-11 사용자). 아래 판일 때 초상화 옆 칸 폭이 150이라 이보다 크면 초상화에 닿는다
+@export var hit_combo_icon_width: float = 146.0
+## 판에 붙은 팝업은 거의 안 떠오르게(px) — 많이 떠오르면 맵 쪽으로 넘어간다
+@export var hit_popup_rise: float = 6.0
+
+var _p1: Fighter = null
+var _p2: Fighter = null
+## 판 번호 -> 지금 떠 있는 콤보 팝업. 새 타가 오면 바로 갈아 끼운다(한 칸에 하나)
+var _combo_popup: Dictionary = {}
+
+func _enter_tree() -> void:
+	add_to_group("combat_hud")
+
+## 때린 사람이 P1·P2 중 하나고 콤보가 2 이상이면 그쪽 초상화 옆에 콤보를 띄운다
+func show_combo_popup(attacker: Node, combo: int) -> void:
+	var side: int = _side_of(attacker)
+	if combo < 2 or side == 0:
+		return
+	var old = _combo_popup.get(side)
+	if old != null and is_instance_valid(old):
+		old.queue_free()
+	var popup: Node2D = _DAMAGE_POPUP_SCENE.instantiate()
+	popup.rise_height = hit_popup_rise
+	popup.combo_icon_width = hit_combo_icon_width
+	add_child(popup)
+	popup.position = _combo_position(side)
+	popup.setup_combo(combo)
+	_combo_popup[side] = popup
+
+func _side_of(f: Node) -> int:
+	if f == null or not is_instance_valid(f):
+		return 0
+	return 1 if f == _p1 else (2 if f == _p2 else 0)
+
+## 콤보 말풍선 가운데(화면 좌표) — 초상화(`CharacterBox`)의 실제 자리에서 잰다
+func _combo_position(side: int) -> Vector2:
+	var panel: Control = _p1_panel if side == 1 else _p2_panel
+	var box: Control = panel.get_node_or_null("CharacterBox")
+	var r: Rect2 = box.get_global_rect() if box else panel.get_global_rect()
+	var combo_h: float = hit_combo_icon_width * 0.55   # 말풍선 높이 ≈ 폭 x 0.55
+	if panels_top:
+		return Vector2(r.get_center().x, r.end.y + 6.0 + combo_h * 0.5)
+	# 초상화 바깥 옆 칸 가운데 — 화면 가장자리와 초상화 사이, 높이는 초상화 가운데
+	var w: float = get_viewport().get_visible_rect().size.x
+	var x: float = r.position.x * 0.5 if side == 1 else (r.end.x + w) * 0.5
+	return Vector2(x, r.get_center().y)
 
 ## 라운드 스코어와(있다면) 남은 시간을 화면 중앙 상단에 표시한다.
 ## 시간은 GameState.time_limit_seconds(방 설정에서 고른 값)에서 Stage가 깎아 내려주는 값이라

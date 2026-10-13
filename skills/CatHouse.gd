@@ -15,6 +15,11 @@ extends Node2D
 
 const CAT_FOLLOWER := preload("res://skills/CatFollower.gd")
 const HURTBOX_SCRIPT := preload("res://combat/Hurtbox.gd")
+## 다 지었을 때 / 고양이가 나올 때마다 / 부서질 때
+const BUILT_SOUND: AudioStream = preload("res://audio/고양이 아줌마/고양이 아줌마 집 다 지었다.mp3")
+const SPAWN_SOUND: AudioStream = preload("res://audio/고양이 아줌마/고양이 스폰 될 때.mp3")
+const BREAK_SOUND: AudioStream = preload("res://audio/고양이 아줌마/고양이 집 뿌서질 떄.mp3")
+const BUILT_SOUND_CUT := 0.45
 const BOX_TEXTURE := preload("res://sprite/고양이 아줌마/고양이집.png")
 ## 박스 그림에서 잰 자리(그림 픽셀) — **그림을 바꾸면 다시 잴 것**
 ## 보이는 영역(지붕 처마 포함, 알파 1/4 이상)
@@ -24,7 +29,7 @@ const BOX_WALLS := Rect2(250, 85, 1080, 826)
 ## 오른쪽 큰 면(손잡이 구멍 있는 면)의 가운데 — 고양이 간판 자리
 const BOX_FRONT_CENTER := Vector2(838, 615)
 
-@export var max_hp: int = 40
+@export var max_hp: int = 10
 @export var spawn_interval: float = 7.0
 ## 주인의 고양이가 맵에 이만큼 있으면 더 안 내보낸다
 @export var max_cats: int = 4
@@ -72,14 +77,26 @@ func finish_build() -> void:
 		return
 	_built = true
 	set_progress(1.0)
+	_play_built_sound()
 	_add_hurtbox()
 	_add_solid()
-	_spawn_cat()
+	# 첫 고양이는 완성 성공음과 겹치지 않게 스폰 소리 없이(2026-10-13 사용자)
+	_spawn_cat(false)
 	var timer := Timer.new()
 	timer.wait_time = maxf(spawn_interval, 0.1)
 	timer.timeout.connect(_spawn_cat)
 	add_child(timer)
 	timer.start()
+
+## 완성 성공음 — 파일에 "띠링"이 두 번 들어 있어서(실측 0.1~0.35초 / 0.85~1.3초) **첫 번째만** 쓰고 끈다
+func _play_built_sound() -> void:
+	var player = Sfx.play(self, BUILT_SOUND, 0.0, 1.0, 0.0)
+	if player == null:
+		return
+	var fade: Tween = player.create_tween()
+	fade.tween_interval(BUILT_SOUND_CUT - 0.08)
+	fade.tween_property(player, "volume_db", -40.0, 0.08)
+	fade.tween_callback(player.queue_free)
 
 func _add_hurtbox() -> void:
 	var hurtbox = HURTBOX_SCRIPT.new()
@@ -158,6 +175,8 @@ func cancel_build() -> void:
 		queue_free()
 
 func _break() -> void:
+	# 소리 노드는 장면 루트에 붙으므로 집이 지워져도 끝까지 난다
+	Sfx.play(self, BREAK_SOUND)
 	var parent: Node = get_parent()
 	if parent:
 		var burst := CrashBurst.new()
@@ -166,7 +185,7 @@ func _break() -> void:
 		burst.global_position = global_position + _walls_local().get_center()
 	queue_free()
 
-func _spawn_cat() -> void:
+func _spawn_cat(with_sound: bool = true) -> void:
 	if not _has_owner or not is_instance_valid(owner_fighter) or _count_owner_cats() >= max_cats:
 		return
 	var parent: Node = get_parent()
@@ -178,6 +197,8 @@ func _spawn_cat() -> void:
 	# 집 벽 예외는 고양이 _ready가 cat_house_solids 그룹으로 전부 건다
 	parent.add_child(cat)
 	cat.global_position = global_position + Vector2(0.0, -2.0)
+	if with_sound:
+		Sfx.play(self, SPAWN_SOUND)
 
 func _count_owner_cats() -> int:
 	var n: int = 0

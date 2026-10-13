@@ -64,7 +64,16 @@ const SPEED_LINES := preload("res://combat/SpeedLines.gd")
 const BIKE_WRECK := preload("res://combat/BikeWreck.gd")
 const JUMP_WIND := preload("res://combat/JumpWind.gd")
 const _SKID_DUST_SCENE := preload("res://skills/SkidDust.tscn")
+## 달리는 동안 계속(바퀴·벨, 2026-10-13 사용자) / 벽·상대에 부딪힐 때
+const WHEEL_SOUND: AudioStream = preload("res://audio/금쪽이/금쪽이 자전거 바퀴 소리.mp3")
+const BELL_SOUND: AudioStream = preload("res://audio/금쪽이/금쪽이 자전거 벨 소리.mp3")
+const CRASH_SOUND: AudioStream = preload("res://audio/금쪽이/금쪽이 자전거 부디칠 떄 소리.mp3")
+## 돌진이 끝날 때 바퀴·벨 소리를 줄여 끄는 시간(초) — 뚝 끊기면 튀는 소리가 난다
+const RIDE_SOUND_FADE := 0.12
 var _wind = null
+## 달리는 동안 도는 소리(바퀴·벨). 돌진이 끝나면 비운다
+var _ride_sounds: Array[AudioStreamPlayer2D] = []
+var _ride_fighter: Fighter = null
 
 var _time_left: float = 0.0
 var _direction: float = 1.0
@@ -103,6 +112,45 @@ func _execute(fighter: Fighter) -> void:
 	_start_wind(fighter)
 	_spawn_takeoff_wind(fighter)
 	_takeoff_wind_timer = takeoff_wind_interval
+	_start_ride_sounds(fighter)
+
+## 바퀴·벨 소리를 돌진 내내 되풀이해 튼다
+func _start_ride_sounds(fighter: Fighter) -> void:
+	_stop_ride_sounds()
+	_ride_fighter = fighter
+	if GameState.game_mode == "attract":
+		return
+	for stream in [WHEEL_SOUND, BELL_SOUND]:
+		var player := AudioStreamPlayer2D.new()
+		player.stream = stream
+		player.bus = &"Sfx"
+		player.volume_db = Sfx.gain_of(stream)   # 크기는 Sfx 표에서
+		player.finished.connect(player.play)   # 돌진보다 짧으면 처음부터 다시
+		# 자전거를 따라가며 좌우로 갈리게 캐릭터에 붙인다(거리로 작아지지는 않게)
+		player.max_distance = 100000.0
+		player.attenuation = 0.0
+		player.panning_strength = Sfx.PANNING_STRENGTH
+		fighter.add_child(player)
+		player.play()
+		_ride_sounds.append(player)
+
+## 바퀴·벨 소리를 짧게 줄여 끈다
+func _stop_ride_sounds() -> void:
+	for player in _ride_sounds:
+		if not is_instance_valid(player):
+			continue
+		player.finished.disconnect(player.play)
+		var tween := player.create_tween()
+		tween.tween_property(player, "volume_db", -40.0, RIDE_SOUND_FADE)
+		tween.tween_callback(player.queue_free)
+	_ride_sounds.clear()
+	_ride_fighter = null
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	# 잡기·라운드 리셋 등으로 돌진이 _end_dash를 안 거치고 끊겨도 소리가 계속 돌지 않게
+	if not _ride_sounds.is_empty() and (not is_instance_valid(_ride_fighter) or _ride_fighter.movement_override != self):
+		_stop_ride_sounds()
 
 ## 출발 순간 뒷바퀴 자리에 점프 바람 줄기를 진행 방향으로 뻗는다 — 맵에 붙여 제자리에 남는다(뛴 자리에 남는 점프 바람과 같다)
 func _spawn_takeoff_wind(fighter: Fighter) -> void:
@@ -169,6 +217,8 @@ func after_physics(fighter: Fighter, delta: float) -> void:
 
 ## 충돌 지점에 터지는 이펙트를 스폰한다
 func _spawn_burst(fighter: Fighter, pos: Vector2) -> void:
+	# 벽에 박을 때도 상대를 들이받을 때도 여기를 지난다 — 부딪히는 소리를 같이 낸다
+	Sfx.play(fighter, CRASH_SOUND)
 	var parent: Node = fighter.get_parent()
 	if parent == null:
 		return
@@ -245,6 +295,7 @@ func interrupt(fighter: Fighter) -> void:
 
 func _end_dash(fighter: Fighter) -> void:
 	fighter.movement_override = null
+	_stop_ride_sounds()
 	# 벽·적에 부딪혀 일찍 끝났을 수도 있다 — 남은 바람 줄은 흩어질 때까지 그리고 스스로 사라진다
 	if is_instance_valid(_wind):
 		_wind.stop()

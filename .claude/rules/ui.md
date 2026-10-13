@@ -80,3 +80,4 @@ paths:
   - **스토리→대전:** `_setup_battle()`(**GameState에 담는 코드는 여기에** — S 건너뛰기가 `_open_next()`를 우회). (임시) `S` 건너뛰기는 방어키와 겹침 → 방어 테스트 땐 `debug_story_skip_key` 끔
 - 대화창 `ui/story/DialogueBox.tscn`: `이름|대사`, 명령 줄 `@show/@hide/@enter/@exit/@close/@waitkey/@pause/@stamp`
 - **3번·11번 장면은 도장만 다른 같은 구조 — 새 사건은 복사해 문구·도장만 교체**. PSD를 고치면 PNG로도. 게임 글자는 "비비탄"으로 통일
+- **데미지는 맞은 캐릭터의 뒤쪽 머리 위 대각선, 콤보는 콤보를 넣고 있는 쪽 초상화 옆**(2026-10-11 사용자: 맞은 자리에 뜨면 캐릭터를 가린다). 데미지 = `Hitbox._damage_popup_spot()`(Hurtbox 윗변 = 머리 꼭대기에서 바라보는 반대쪽으로 `DAMAGE_POPUP_BACK` 46, 위로 `DAMAGE_POPUP_UP` 34, 월드에 띄움 — 선수가 아니면 맞은 자리). 콤보 = `CombatHUD.show_combo_popup()`(`combat_hud` 그룹, 판마다 하나), 폭 `hit_combo_icon_width` 146(112의 1.3배): 판이 아래면 초상화 아래가 58px뿐이라 **초상화 바깥 옆**(사용자 확인), 판이 위면 **초상화 바로 아래**. HUD 없는 훈련장은 예전처럼 데미지 위에 콤보. 그림 `데미지 아이콘.png`·`콤보.png`, 숫자는 주아체 코드 — 빈 칸 실측값은 `DamagePopup.gd` 상수(그림 바꾸면 재측정)

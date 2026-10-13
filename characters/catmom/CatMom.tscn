@@ -86,7 +86,7 @@ description = "집에서 나올 고양이를 검은 고양이, 주황 고양이,
 [node name="SkillUltimate" type="Node" parent="."]
 script = ExtResource("9")
 demo_video = ExtResource("vid_ult")
-cooldown = 22.0
+cooldown = 45.0
 skill_name = "고양이 대작전"
 description = "고른 고양이에 따라 갈린다. 검은: 평타가 똥 유탄 5발이 된다. 주황: 고양이 옷을 입어 평타가 세진다. 흰: 체력을 회복한다."
 start_on_cooldown = true

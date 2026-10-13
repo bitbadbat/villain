@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://rth2vxsi43or"
+path="res://.godot/imported/고양이 스폰 될 때.mp3-9aeb4f0baf9af4b812fd05e87312f07b.mp3str"
+
+[deps]
+
+source_file="res://audio/고양이 아줌마/고양이 스폰 될 때.mp3"
+dest_files=["res://.godot/imported/고양이 스폰 될 때.mp3-9aeb4f0baf9af4b812fd05e87312f07b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -57,6 +57,9 @@ func _find_target(fighter: Fighter) -> Fighter:
 	if not opponent.can_be_grabbed():
 		return null
 	var dx: float = opponent.global_position.x - fighter.global_position.x
+	# 훈련장 판정 보기 — 잡기는 앞쪽 손 닿는 거리만 본다(높이는 안 봐서 몸 높이만큼 그린다)
+	Fighter.debug_hit_rect(Rect2(fighter.global_position + Vector2(minf(0.0, fighter.facing * _grab_reach(fighter)), -45.0),
+		Vector2(_grab_reach(fighter), 90.0)))
 	if absf(dx) > _grab_reach(fighter) or signf(dx) != fighter.facing:
 		return null
 	return opponent

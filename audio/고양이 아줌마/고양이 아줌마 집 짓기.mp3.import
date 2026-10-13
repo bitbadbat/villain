@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bsewhl4cyckj5"
+path="res://.godot/imported/고양이 아줌마 집 짓기.mp3-927d1ede671851eeb700120e6be22028.mp3str"
+
+[deps]
+
+source_file="res://audio/고양이 아줌마/고양이 아줌마 집 짓기.mp3"
+dest_files=["res://.godot/imported/고양이 아줌마 집 짓기.mp3-927d1ede671851eeb700120e6be22028.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

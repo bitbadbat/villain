@@ -10,11 +10,16 @@ extends Skill
 ## (연기가 매 프레임 시전자의 입을 알아서 따라간다).
 
 @export var smoke_scene: PackedScene
-## 연기를 뿜는 시간(초)
-@export var duration: float = 5.0
-## 한 번 맞을 때 데미지 / 다시 맞기까지 간격(초)
-@export var damage: int = 2
-@export var tick_interval: float = 0.5
+
+## 소리 — 일진 전용 파일이 없어서 있는 것 재활용(2026-10-13 사용자 "대충 재활용")
+const PUFF_SOUND: AudioStream = preload("res://audio/지하철 아저씨/지하철 아저씨 대쉬 배기.mp3")
+const HIT_SOUND: AudioStream = preload("res://audio/3타 펀치.mp3")
+## 연기를 뿜는 시간(초). 2026-10-13 사용자: 5초 도트 -> **1초 한 방**(맞으면 3타처럼 날아감)
+@export var duration: float = 1.0
+## 한 번 맞을 때 데미지 / 다시 맞기까지 간격(초).
+## 간격을 연기 시간보다 길게 둬서 **한 번만** 맞는다 — 데미지는 한 방 10(2026-10-13 사용자)
+@export var damage: int = 10
+@export var tick_interval: float = 99.0
 ## 캐릭터 원점에서 입까지 — x는 바라보는 방향으로 자동 반전, y는 음수가 위쪽
 @export var mouth_offset: Vector2 = Vector2(17.0, -27.0)
 ## 담배를 입으로 가져가는 데 걸리는 시간(초) — 이 시간이 지나야 연기가 나온다.
@@ -58,6 +63,13 @@ func _spawn_smoke(fighter: Fighter) -> void:
 	fighter.get_parent().add_child(smoke)
 	if smoke.has_method("setup"):
 		smoke.setup(fighter, mouth_offset, fighter.compute_damage(damage), tick_interval, duration)
+	# 맞으면 3타처럼 날아가니 소리도 3타 소리로
+	if "hit_sound" in smoke:
+		smoke.hit_sound = HIT_SOUND
+	# 뿜는 순간 "훅" — 일진 전용 소리가 없어 지하철 아저씨 대쉬 베기를 재활용(앞 0.5초 무음은 건너뜀)
+	var puff = Sfx.play(fighter, PUFF_SOUND)
+	if puff:
+		puff.seek(0.5)
 
 ## 손에 든 담배를 보이거나 숨긴다
 func _set_cigarette(fighter: Fighter, shown: bool) -> void:

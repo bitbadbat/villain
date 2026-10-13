@@ -40,6 +40,8 @@ extends Skill
 @export var slow_time: float = 0.8
 
 const COUNTER_FLASH := preload("res://skills/CounterFlash.gd")
+## 반격 자세를 잡는 순간(스킬을 누르면 — 헛방이어도 난다)
+const STANCE_SOUND: AudioStream = preload("res://audio/지하철 아저씨/지하철 아저씨 반격기 쓸 때.mp3")
 ## 날아가는 이펙트 — ComboMeleeAttack 마무리 타와 같은 것
 const LAUNCH_TRAIL := preload("res://combat/LaunchTrail.gd")
 
@@ -98,6 +100,7 @@ func _execute(fighter: Fighter) -> void:
 	var my_id: int = _stance_id
 	fighter.counter_stance = self
 	fighter.movement_override = self
+	Sfx.play(fighter, STANCE_SOUND)
 	fighter.velocity.x = 0.0
 	fighter.start_busy(stance_duration + whiff_lag)
 	fighter.set_tint("counter_stance", stance_tint)

@@ -1,9 +1,29 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://combat/DamagePopup.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://d0boedlch1ywc" path="res://sprite/데미지 아이콘.png" id="2_icon"]
+[ext_resource type="Texture2D" uid="uid://c4yy377q2vepj" path="res://sprite/콤보.png" id="3_combo"]
 
 [node name="DamagePopup" type="Node2D"]
 script = ExtResource("1")
+
+[node name="Icon" type="Sprite2D" parent="."]
+texture_filter = 4
+texture = ExtResource("2_icon")
+
+[node name="ComboIcon" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 4
+texture = ExtResource("3_combo")
+
+[node name="ComboNumber" type="Label" parent="."]
+visible = false
+offset_left = -150.0
+offset_top = -150.0
+offset_right = 150.0
+offset_bottom = 150.0
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Combo" type="Label" parent="."]
 offset_left = -90.0

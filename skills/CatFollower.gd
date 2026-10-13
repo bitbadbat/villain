@@ -17,6 +17,10 @@ enum Kind { BLACK, ORANGE, WHITE }
 
 const CAT_SPRITE := preload("res://skills/CatSprite.gd")
 const HURTBOX_SCRIPT := preload("res://combat/Hurtbox.gd")
+## 소리(2026-10-13) — 구간은 실측 파형: 공격 0.25~1.35초, 회복 1.0~1.4초(앞 1초 무음), 피격은 0.05초부터 끝까지
+const HURT_SOUND: AudioStream = preload("res://audio/고양이 아줌마/고양이 피격.mp3")
+const ATTACK_SOUND: AudioStream = preload("res://audio/고양이 아줌마/고양이 공격.mp3")
+const HEAL_SOUND: AudioStream = preload("res://audio/고양이 아줌마/햐양 고양이 회복.mp3")
 
 ## 종류별 털 색 / 이름(머리 위 표시·디버그용)
 const FUR_COLORS: Array[Color] = [Color(0.16, 0.16, 0.18), Color(0.95, 0.56, 0.2), Color(0.97, 0.97, 0.95)]
@@ -75,7 +79,7 @@ const OUTLINE_COLOR := Color(0.1, 0.08, 0.08)
 @export var drop_through_time: float = 0.35
 ## 처음 나올 때 커지는 시간(초)
 @export var pop_time: float = 0.2
-@export var max_hp: int = 20
+@export var max_hp: int = 10
 ## 넉백 있는 공격에 맞으면 이만큼(초) 따라가기를 멈추고 눈을 감은 채 밀려난다
 @export var hurt_stun: float = 0.45
 ## 밀려나는 동안 가로 속도가 줄어드는 정도(px/초²)
@@ -231,6 +235,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, _pop_override: 
 		return
 	current_hp = maxi(current_hp - amount, 0)
 	_flash_left = 0.12
+	_play_part(HURT_SOUND, 0.05, 0.0)
 	if knockback != Vector2.ZERO:
 		velocity = Vector2(knockback.x, minf(knockback.y, -120.0))
 		_stun_left = hurt_stun
@@ -245,6 +250,19 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, _pop_override: 
 
 func take_map_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: float = -1.0) -> void:
 	take_damage(amount, knockback, pop_override, true)
+
+## 소리를 `from`초부터 틀고, `to`가 0보다 크면 그 시각에 줄여 끈다 — 파일 앞뒤 무음을 건너뛰려고
+func _play_part(stream: AudioStream, from: float, to: float) -> void:
+	var player = Sfx.play(self, stream)
+	if player == null:
+		return
+	if from > 0.0:
+		player.seek(from)
+	if to > from:
+		var fade: Tween = player.create_tween()
+		fade.tween_interval(maxf((to - from) / maxf(player.pitch_scale, 0.05) - 0.08, 0.0))
+		fade.tween_property(player, "volume_db", -40.0, 0.08)
+		fade.tween_callback(player.queue_free)
 
 ## 체력이 다 닳았다 — 바로 무리에서 빼야 집이 다음 고양이를 내보낼 수 있다(4마리 제한)
 func _die() -> void:
@@ -343,6 +361,7 @@ func _tick_black(delta: float) -> float:
 			_dash_left = black_dash_time
 			_trail_timer = 0.0
 			_start_hit(black_damage, Vector2(_dash_dir * 220.0, -160.0))
+			_play_part(ATTACK_SOUND, 0.25, 1.35)
 		return 0.0
 	if _dash_left > 0.0:
 		_dash_left -= delta
@@ -393,6 +412,7 @@ func _tick_orange(delta: float) -> float:
 			_start_hit(orange_damage, Vector2(_facing * 180.0, -140.0))
 			Timers.after(self, 0.12, func(): _set_hitbox_active(false))
 			_spawn_claw_marks()
+			_play_part(ATTACK_SOUND, 0.25, 1.35)
 			return _patrol_dir * _speed
 	# 밟은 바닥 끝(또는 벽)에서 끝까지 왔다 갔다 — 할퀴는 동안엔 돌아본 쪽을 그대로 본다
 	if is_on_floor() and (is_on_wall() or not _floor_ahead()):
@@ -463,7 +483,8 @@ func _tick_white() -> float:
 	if absf(dx) <= white_lick_range.x and dy <= white_lick_range.y:
 		if _attack_cd <= 0.0 and owner_fighter.current_hp < owner_fighter.stats.max_hp:
 			_attack_cd = white_lick_cooldown
-			owner_fighter.heal(white_heal)
+			owner_fighter.heal(white_heal, true, false)   # 공용 회복 소리 대신 자기 소리(아래)
+			_play_part(HEAL_SOUND, 1.0, 1.4)
 			# 핥아준 순간 주인이 잠깐 초록빛 — HealSkill과 같은 "회복했다" 신호. 고양이는 머리를 까딱인다
 			owner_fighter.set_tint("cat_lick", Color(0.72, 1.0, 0.78), 0.35)
 			if _sprite:

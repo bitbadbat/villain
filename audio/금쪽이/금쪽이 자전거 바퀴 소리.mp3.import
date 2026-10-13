@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cpcb6bxtmf6ek"
+path="res://.godot/imported/금쪽이 자전거 바퀴 소리.mp3-9cb6f1ae463313fc9f30770fc2e8885b.mp3str"
+
+[deps]
+
+source_file="res://audio/금쪽이/금쪽이 자전거 바퀴 소리.mp3"
+dest_files=["res://.godot/imported/금쪽이 자전거 바퀴 소리.mp3-9cb6f1ae463313fc9f30770fc2e8885b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -68,6 +68,7 @@ func _scream(fighter: Fighter) -> void:
 	_cry(fighter)
 	_zoom_in(fighter)
 	var hit_any: bool = false
+	Fighter.debug_hit_circle(fighter.global_position, radius)
 	for other in fighter.get_tree().get_nodes_in_group("fighters"):
 		if other == fighter or not (other is Fighter) or not is_instance_valid(other):
 			continue

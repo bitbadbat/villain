@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://devo6lvv4jp54"
+path="res://.godot/imported/지하철아저씨 벤 자국 터질 떄 .mp3-7abd1dc9dac2cb53837c411a1f3a8d12.mp3str"
+
+[deps]
+
+source_file="res://audio/지하철 아저씨/지하철아저씨 벤 자국 터질 떄 .mp3"
+dest_files=["res://.godot/imported/지하철아저씨 벤 자국 터질 떄 .mp3-7abd1dc9dac2cb53837c411a1f3a8d12.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

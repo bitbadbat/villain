@@ -39,6 +39,7 @@ extends Node2D
 ## 왼쪽 일시정지 버튼 (스토리 장면과 같은 것을 쓴다)
 const PAUSE_BUTTON_SCENE := "res://ui/PauseButton.tscn"
 const DEBUG_GRID := preload("res://maps/DebugGrid.gd")
+const POPUP_INTRO := preload("res://maps/PopupIntro.gd")
 ## 대전 최종 승부 연출 — 승리·패배 화면 / 연행 장면(둘 다 레이어 25)
 const MATCH_ENDING_SCENE := "res://ui/result/MatchEnding.tscn"
 const ARREST_SCENE := "res://ui/result/ArrestScene.tscn"
@@ -104,6 +105,8 @@ static var show_debug_grid: bool = false
 @export_group("화면 효과")
 ## 화면 전체 색보정(`maps/ScreenGrade.gd`)을 이 맵에 깔지. 설정의 `GameState.screen_effects_enabled`가 꺼져 있으면 어차피 안 보인다
 @export var screen_grade_enabled: bool = true
+## 첫 라운드 시작 때 맵이 팝업북처럼 일어서는 연출(`maps/PopupIntro.gd`, 대전·스토리 전투). 끄면 바로 카운트다운
+@export var popup_intro_enabled: bool = true
 ## 이 맵의 색보정 스타일(`ScreenGradeStyle` .tres, `maps/grade/`). 비우면 `Default.tres`
 @export var screen_grade: Resource = null
 @export_group("")
@@ -146,6 +149,12 @@ func _ready() -> void:
 	if _attract:
 		_start_attract()
 		return
+	# 팝업북 시작 연출 — **첫 프레임이 그려지기 전에** 맵 그림을 눕혀 둔다(아래 await 전에)
+	var popup = null
+	if popup_intro_enabled and GameState.p1_round_wins + GameState.p2_round_wins == 0:
+		popup = POPUP_INTRO.new()
+		add_child(popup)
+		popup.prepare(self)
 	# 스토리 모드 한정: 캐릭터를 스폰하기도 전에 "주인공 VS 적" 매치업 화면부터 보여준다.
 	# GameState.p1/p2_character_path만으로 채우므로 Fighter가 없어도 상관없다
 	if GameState.game_mode == "story":
@@ -168,6 +177,9 @@ func _ready() -> void:
 	# 입력을 못 받게 한다 (여기서 안 얼리면 그 한 프레임 동안 is_active 기본값(true)이라
 	# 카운트다운이 뜨기도 전에 스킬이 나가버리는 틈이 생겼었다)
 	_freeze_controllers()
+	# 캐릭터·HUD도 눕힌다(캐릭터는 숨겨 뒀다가 자기 차례에 나타남) — 다음 프레임이 그려지기 전에
+	if popup != null:
+		popup.prepare_late()
 
 	# 스폰된 Fighter들의 _ready()가 끝날 때까지 한 프레임 기다렸다가 연결한다
 	await get_tree().process_frame
@@ -184,6 +196,8 @@ func _ready() -> void:
 	# 스토리 VS 화면이 **화면을 덮어 둔 채로** 끝난다 — 캐릭터가 다 자리잡은 지금 걷어낸다.
 	# 덮어 둔 게 없으면(대전 모드) 그냥 지나간다
 	await SceneTransition.uncover()
+	if popup != null and is_instance_valid(popup):
+		await popup.play()
 
 	var round_start: RoundStart = load("res://ui/RoundStart.tscn").instantiate()
 	add_child(round_start)

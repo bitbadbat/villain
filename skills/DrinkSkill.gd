@@ -7,11 +7,14 @@ extends Skill
 ## 최대 스택일 때 얼굴이 빨개지는 세기 (0이면 안 빨개지고, 1이면 새빨개진다)
 @export_range(0.0, 1.0, 0.05) var max_redness: float = 0.6
 
+const DRINK_SOUND: AudioStream = preload("res://audio/주정뱅이/주정뱅이 술 마실 떄.mp3")
+
 func _execute(fighter: Fighter) -> void:
 	# 고개를 젖히고 술병을 입으로 가져가는 동작. 아직 임시 사각형을 쓰는 캐릭터는 이 메서드가 없어서 그냥 넘어간다
 	var visual: Node2D = fighter.get_node_or_null("Visual")
 	if visual and visual.has_method("play_drink_motion"):
 		visual.play_drink_motion()
+	Sfx.play(fighter, DRINK_SOUND)
 
 	var stacks: int = fighter.custom_data.get("drink_stacks", 0)
 	stacks = mini(stacks + 1, max_stacks)

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://trc3amnhekym"
+path="res://.godot/imported/주정뱅이 토.mp3-8b0a1199a3beb642d10d21037a38e73d.mp3str"
+
+[deps]
+
+source_file="res://audio/주정뱅이/주정뱅이 토.mp3"
+dest_files=["res://.godot/imported/주정뱅이 토.mp3-8b0a1199a3beb642d10d21037a38e73d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

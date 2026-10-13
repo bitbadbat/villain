@@ -21,6 +21,7 @@ const RIGS := {
 	"악플러": "res://characters/akpeulleo/AkpeulleoRig.tscn",
 	"일진": "res://characters/iljin/IljinRig.tscn",
 	"금쪽이": "res://characters/chokbeopsonyeon/ChokbeopsonyeonRig.tscn",
+	"경찰": "res://characters/police/PoliceRig.tscn",
 }
 ## 인물이 차지할 비율 — 1이면 테두리가 캔버스에 딱 붙는다.
 ## 먼저 찍어 둔 넉 장이 0.90~0.94라 맞춰 둔다. 층간소음만 엄마와 아이가 가로로 늘어서서 따로 본다

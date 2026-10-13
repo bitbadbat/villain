@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" path="res://sprite/storymode/경찰서/사건해결도장.png" id="7_stamp"]
 
 [node name="StoryScene22" type="Control"]
+next_scene = "res://ui/story/StoryClearScreen.tscn"
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

@@ -362,8 +362,31 @@ func _place_illustration() -> void:
 	_illust.scale = Vector2.ONE * factor
 	_illust.position = illust_center - size * factor * 0.5
 
+## 스토리 버튼 — **이어 할 기록이 있으면 두 갈래로 묻는다**(2026-10-13 사용자).
+## 없으면 예전처럼 "플레이하시겠습니까?" 한 갈래
 func _on_story_pressed() -> void:
+	if GameState.has_story_save():
+		var where: String = GameState.saved_story_name()
+		var message: String = "저장된 기록이 있습니다.
+이어서 하시겠습니까?"
+		if where != "":
+			message = "저장된 기록이 있습니다. (%s)
+이어서 하시겠습니까?" % where
+		_pending = func(): _resume_story()
+		_pending_alternate = func(): _restart_story()
+		_confirm.open_choice(message, "이어하기", "처음부터")
+		return
 	_ask("스토리 모드를 플레이하시겠습니까?", _start_story)
+
+## 적어 둔 자리에서 잇는다 — 장면이 사라졌으면(이야기를 갈아엎었으면) 처음부터
+func _resume_story() -> void:
+	if not GameState.resume_story():
+		_restart_story()
+
+## 처음부터 — 적어 둔 자리를 지우고 1화부터 다시
+func _restart_story() -> void:
+	GameState.clear_story_save()
+	_start_story()
 
 func _on_versus_pressed() -> void:
 	_ask("대전 모드를 플레이하시겠습니까?", _start_versus)

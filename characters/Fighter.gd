@@ -70,8 +70,6 @@ const HEAL_SOUND_CUT := 1.5
 const GUARD_SOUND := preload("res://audio/방어 할 떄.mp3")
 const PARRY_SOUND := preload("res://audio/방어 패링.mp3")
 const PARRY_SOUND_GAP_MSEC := 80
-## 3타로 날아가다 바닥·벽에 부딪혀 튕길 때마다
-const BOUNCE_SOUND := preload("res://audio/바닥,벽의 부디 침.mp3")
 ## 궁극기를 쓸 때(전 캐릭터 공용)
 const ULTIMATE_SOUND := preload("res://audio/궁극기소리.mp3")
 ## 3타로 날아가는 동안 흘리는 옅은 연기(combat/LaunchSmoke.gd)
@@ -801,7 +799,6 @@ func _try_finisher_wall_bounce(pre_vx: float) -> void:
 	if is_zero_approx(normal.x) or signf(pre_vx) != -signf(normal.x):
 		return
 	velocity.x = -pre_vx * FINISHER_WALL_BOUNCE
-	Sfx.play(self, BOUNCE_SOUND)
 	# 위아래 속도는 그대로 — 옆만 거울처럼 뒤집어서 벽이 없을 때와 같은 시간에 떨어진다(2026-10-01 사용자 요청 "벽에 튕겨도 지속 시간이 안 늘게").
 	# 예전엔 45도 위로 다시 떠올라 포물선 하나만큼 기절이 늘었다
 	_launch_momentum = true
@@ -849,7 +846,6 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 		if parent:
 			# 발끝(원점 +30) 조금 위 — 바닥에 부딪힌 자리
 			CrashBurst.spawn(parent, global_position + Vector2(0.0, 24.0))
-		Sfx.play(self, BOUNCE_SOUND)
 		var cam: Node = get_tree().get_first_node_in_group("game_camera")
 		if cam and cam.has_method("add_trauma"):
 			cam.add_trauma(FINISHER_GROUND_TRAUMA)

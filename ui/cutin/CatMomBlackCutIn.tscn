@@ -90,6 +90,7 @@ open_time = 0.12
 interval_min = 9999.0
 interval_max = 9999.0
 double_blink_chance = 0.0
+closed_swap_at = null
 
 [node name="PanelHold" type="Polygon2D" parent="." unique_id=976501421]
 clip_children = 2

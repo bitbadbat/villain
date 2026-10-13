@@ -17,8 +17,14 @@ extends Skill
 ## 지르는 순간 몸이 눌리는 배율 (가로로 퍼지고 세로로 납작해진다). (1,1)이면 연출 없음
 @export var shout_squash: Vector2 = Vector2(1.15, 0.9)
 
+const SCREAM_SOUND: AudioStream = preload("res://audio/주정뱅이/주정뱅이 궁극기.mp3")
+## 소리를 끊는 시각(초)과 그 앞에서 줄이는 시간
+const SCREAM_CUT := 1.05
+const SCREAM_FADE := 0.15
+
 func _execute(fighter: Fighter) -> void:
 	_play_shout_motion(fighter)
+	_play_scream_sound(fighter)
 	if cone_scene == null:
 		return
 
@@ -29,6 +35,18 @@ func _execute(fighter: Fighter) -> void:
 	cone.global_position = fighter.global_position + Vector2(mouth_offset.x * fighter.facing, mouth_offset.y)
 	cone.area_entered.connect(_on_cone_hit.bind(fighter))
 	cone.setup(fighter.facing, fighter.compute_damage(damage), fighter)
+
+## 괴성 소리 — 파일 **앞의 소리 지르는 부분만** 쓴다(2026-10-13 사용자).
+## 실측 파형: 0.1~0.9초가 고함, 0.9초부터 잦아들고 1.15초부터 다른 소리가 이어진다 → SCREAM_CUT에서 줄여 끈다.
+## ⚠️ 소리 파일을 바꾸면 다시 잴 것
+func _play_scream_sound(fighter: Fighter) -> void:
+	var player = Sfx.play(fighter, SCREAM_SOUND, 0.0, 1.0, 0.0)
+	if player == null:
+		return
+	var tween: Tween = player.create_tween()
+	tween.tween_interval(SCREAM_CUT - SCREAM_FADE)
+	tween.tween_property(player, "volume_db", -40.0, SCREAM_FADE)
+	tween.tween_callback(player.queue_free)
 
 ## 지르는 순간 스스로 부르르 떤다
 func _play_shout_motion(fighter: Fighter) -> void:

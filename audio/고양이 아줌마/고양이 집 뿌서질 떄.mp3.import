@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c74i54qetjcqu"
+path="res://.godot/imported/고양이 집 뿌서질 떄.mp3-bcf56058182fd36ecb04bfa30411c481.mp3str"
+
+[deps]
+
+source_file="res://audio/고양이 아줌마/고양이 집 뿌서질 떄.mp3"
+dest_files=["res://.godot/imported/고양이 집 뿌서질 떄.mp3-bcf56058182fd36ecb04bfa30411c481.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

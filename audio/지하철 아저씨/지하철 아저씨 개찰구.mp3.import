@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://tn6urgnstvgh"
+path="res://.godot/imported/지하철 아저씨 개찰구.mp3-89c3d53965d2b394b662d314ea6736d2.mp3str"
+
+[deps]
+
+source_file="res://audio/지하철 아저씨/지하철 아저씨 개찰구.mp3"
+dest_files=["res://.godot/imported/지하철 아저씨 개찰구.mp3-89c3d53965d2b394b662d314ea6736d2.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

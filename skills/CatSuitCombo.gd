@@ -102,6 +102,8 @@ func on_combo_hit(fighter: Fighter, step: int, victim: Node) -> void:
 		return
 	# 막았으면 평소처럼 막힌 이펙트 — 피해도 잡기도 없다
 	if target.is_guarding:
+		# 이 3타는 피해 길(take_damage)을 안 타서 패링 소리를 직접 낸다
+		target.play_parry_sound()
 		if hitbox:
 			hitbox._notify_blocked_by_guard()
 			var hurt: Area2D = target.get_node_or_null("Hurtbox")

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://drp06w2f6o2l4"
+path="res://.godot/imported/악플러 회전 공격.mp3-4920d03b1ac72374b482b0aaba334aaf.mp3str"
+
+[deps]
+
+source_file="res://audio/악플러/악플러 회전 공격.mp3"
+dest_files=["res://.godot/imported/악플러 회전 공격.mp3-4920d03b1ac72374b482b0aaba334aaf.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

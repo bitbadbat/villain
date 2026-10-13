@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://xp6ffknctq2k"
+path="res://.godot/imported/악플러 마우스 던 질 때.mp3-73530cf3989cefe0653cccb1bc7d6aa1.mp3str"
+
+[deps]
+
+source_file="res://audio/악플러/악플러 마우스 던 질 때.mp3"
+dest_files=["res://.godot/imported/악플러 마우스 던 질 때.mp3-73530cf3989cefe0653cccb1bc7d6aa1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

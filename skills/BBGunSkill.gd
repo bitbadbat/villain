@@ -22,6 +22,9 @@ extends Skill
 ## 다 쏜 뒤 총을 다시 주머니에 넣는 시간(초, 2026-09-29 사용자 요청). 0이면 넣는 동작 없이 사라진다
 @export var holster_time: float = 0.15
 
+## 한 발 쏠 때마다
+const GUN_SOUND: AudioStream = preload("res://audio/금쪽이/금쪽이 총 소리.mp3")
+
 var _shots_left: int = 0
 var _shot_timer: float = 0.0
 var _direction: float = 1.0
@@ -78,6 +81,7 @@ func _fire_one() -> void:
 	projectile.global_position = muzzle_pos
 	projectile.setup(_direction, projectile_speed, _fighter_ref.compute_damage(damage), _fighter_ref)
 	_spawn_muzzle_flash(muzzle_pos)
+	Sfx.play(_fighter_ref, GUN_SOUND)
 	# 발사 반동 — 총·손이 뒤로 살짝 밀린다
 	var visual: Node2D = _fighter_ref.get_node_or_null("Visual")
 	if visual and visual.has_method("gun_recoil"):

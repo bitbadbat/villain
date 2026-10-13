@@ -59,6 +59,21 @@ const JUMP_SPEED_LINE_TIME: float = 0.4
 ## 점프 줄은 길에 수직(좌우)으로 이 범위 안에 퍼진다 — 세로로 뛰니 몸 폭 안쪽으로
 const JUMP_SPEED_LINE_SPREAD: Vector2 = Vector2(-18.0, 18.0)
 const DASH_TRAIL_LINES_SCRIPT := preload("res://combat/DashTrailLines.gd")
+## 대시 소리 — 평소 대시에만(가로채는 궁은 자기 동작이라 안 냄)
+const DASH_SOUND := preload("res://audio/대쉬.mp3")
+## 점프 소리 — 땅 점프·이단 점프 둘 다
+const JUMP_SOUND := preload("res://audio/점프.mp3")
+## 회복할 때(회복 이펙트가 뜨는 회복만 — 라운드 리셋 채우기는 조용히)
+const HEAL_SOUND := preload("res://audio/hp 회복.mp3")
+const HEAL_SOUND_CUT := 1.5
+## 방어를 켤 때 / 방어 중에 공격을 막아낼 때
+const GUARD_SOUND := preload("res://audio/방어 할 떄.mp3")
+const PARRY_SOUND := preload("res://audio/방어 패링.mp3")
+const PARRY_SOUND_GAP_MSEC := 80
+## 3타로 날아가다 바닥·벽에 부딪혀 튕길 때마다
+const BOUNCE_SOUND := preload("res://audio/바닥,벽의 부디 침.mp3")
+## 궁극기를 쓸 때(전 캐릭터 공용)
+const ULTIMATE_SOUND := preload("res://audio/궁극기소리.mp3")
 ## 3타로 날아가는 동안 흘리는 옅은 연기(combat/LaunchSmoke.gd)
 const LAUNCH_SMOKE_SCRIPT := preload("res://combat/LaunchSmoke.gd")
 ## 그네에 튕기거나 스프링 시소로 높이 튈 때 날아가는 몸 뒤로 남기는 잔상(start_air_trail)의 간격·처음 투명도·사라지는 시간.
@@ -154,6 +169,7 @@ var _air_trail_timer: float = 0.0
 var is_guarding: bool = false
 ## 방어가 유지되는 남은 시간 / 다음 방어까지 남은 쿨타임
 var _guard_time: float = 0.0
+var _last_parry_msec: int = -100000
 ## 이 캐릭터만 **추가로 더 버티는** 방어 시간(초). 지하철 아저씨 궁이 +0.5를 걸어 1.0 → 1.5초가 된다.
 ## 공용 `guard_duration`은 static(모두 공유)이라 거기 더하면 상대 방어까지 같이 길어진다
 var guard_duration_bonus: float = 0.0
@@ -451,6 +467,7 @@ func take_damage(amount: int, knockback: Vector2 = Vector2.ZERO, pop_override: f
 	# 막아낸 양은 얼마나 잘 막았는지 볼 수 있게 누적해둔다
 	if is_guarding and not ignore_guard:
 		custom_data["guard_absorbed"] = custom_data.get("guard_absorbed", 0) + amount
+		play_parry_sound()
 		return
 	# 3타에 맞아 날아가는(기절) 동안 받는 피해는 절반(2026-10-08 사용자 결정) — 추가타 콤보가 너무 아프지 않게. 올림이라 1은 1
 	if _finisher_flying:
@@ -784,6 +801,7 @@ func _try_finisher_wall_bounce(pre_vx: float) -> void:
 	if is_zero_approx(normal.x) or signf(pre_vx) != -signf(normal.x):
 		return
 	velocity.x = -pre_vx * FINISHER_WALL_BOUNCE
+	Sfx.play(self, BOUNCE_SOUND)
 	# 위아래 속도는 그대로 — 옆만 거울처럼 뒤집어서 벽이 없을 때와 같은 시간에 떨어진다(2026-10-01 사용자 요청 "벽에 튕겨도 지속 시간이 안 늘게").
 	# 예전엔 45도 위로 다시 떠올라 포물선 하나만큼 기절이 늘었다
 	_launch_momentum = true
@@ -831,6 +849,7 @@ func _update_finisher_flight(delta: float, fall_speed: float) -> void:
 		if parent:
 			# 발끝(원점 +30) 조금 위 — 바닥에 부딪힌 자리
 			CrashBurst.spawn(parent, global_position + Vector2(0.0, 24.0))
+		Sfx.play(self, BOUNCE_SOUND)
 		var cam: Node = get_tree().get_first_node_in_group("game_camera")
 		if cam and cam.has_method("add_trauma"):
 			cam.add_trauma(FINISHER_GROUND_TRAUMA)
@@ -977,11 +996,24 @@ func _flash_hit() -> void:
 	tween.tween_callback(_apply_top_tint)
 
 ## HP를 회복시킨다 (최대 HP를 넘지 않음). show_vfx를 끄면 회복 이펙트 없이 조용히 채운다(라운드 리셋 등)
-func heal(amount: int, show_vfx: bool = true) -> void:
+## play_sound를 끄면 공용 회복 소리를 안 낸다 — 자기 회복 소리가 따로 있는 쪽(흰 고양이 핥기)이 끈다
+func heal(amount: int, show_vfx: bool = true, play_sound: bool = true) -> void:
 	current_hp = mini(current_hp + amount, stats.max_hp)
 	health_changed.emit(current_hp, stats.max_hp)
 	if show_vfx and amount > 0:
 		_spawn_heal_burst(float(amount) / HEAL_BURST_FULL_AMOUNT)
+		if play_sound:
+			_play_heal_sound()
+
+## 회복 소리 — 파일(8초)의 **앞 1.5초만** 쓴다. 실측: 0.1~1.5초가 소리, 그 뒤 6.5초는 -58dB 잡음뿐
+func _play_heal_sound() -> void:
+	var player = Sfx.play(self, HEAL_SOUND, 0.0, 1.0, 0.0)
+	if player == null:
+		return
+	var fade: Tween = player.create_tween()
+	fade.tween_interval(HEAL_SOUND_CUT - 0.2)
+	fade.tween_property(player, "volume_db", -40.0, 0.2)
+	fade.tween_callback(player.queue_free)
 
 ## 회복 이펙트를 띄운다. 착지 먼지와 같은 이유로 **맵에 붙이고**, 이펙트가 스스로 캐릭터를 따라온다
 func _spawn_heal_burst(power: float) -> void:
@@ -1178,7 +1210,16 @@ func start_guard() -> bool:
 	_shield.set_active(true)
 	_shield.set_remain(1.0)
 	_set_visual_guard(true)
+	Sfx.play(self, GUARD_SOUND)
 	return true
+
+## 방어 중에 막아낸 공격마다 패링 소리(`take_damage`가 부른다 — 피해 길을 안 타는 공격은 직접 부를 것). 도트 틱처럼 잘게 연달아 오는 피해에 소리가 겹쳐 울리지 않게 짧은 간격을 둔다
+func play_parry_sound() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_parry_msec < PARRY_SOUND_GAP_MSEC:
+		return
+	_last_parry_msec = now
+	Sfx.play(self, PARRY_SOUND)
 
 ## 방어를 끈다. refund가 true면 쿨타임을 물리지 않는다 —
 ## "아래키를 누르자마자 점프"(발판 통과)처럼 방어할 의도가 아니었던 경우에 쓴다
@@ -1285,6 +1326,7 @@ func dash(direction: float) -> bool:
 		return true
 	_dash_time = dash_duration
 	_spawn_dash_speed_lines()
+	Sfx.play(self, DASH_SOUND)
 	return true
 
 ## 푸른 잔상 하나 — 이제 대시는 안 쓰고 순간이동(CounterSkill)이 떠난 자리에 남길 때만 쓴다
@@ -1412,6 +1454,7 @@ func jump() -> void:
 		return
 	# 발밑 바람 줄기(_spawn_jump_wind)는 2026-10-06 사용자 요청으로 뺐다 — 하얀 스피드 라인으로 대신한다
 	_spawn_jump_speed_lines()
+	Sfx.play(self, JUMP_SOUND)
 	if vault_jump:
 		_play_vault_effect()
 	# 점프하는 순간 몸이 세로로 늘어나는 연출 (그 메서드가 있는 비주얼만)
@@ -1550,6 +1593,8 @@ func use_ultimate() -> void:
 		_play_ultimate_cutin()
 
 func _play_ultimate_cutin() -> void:
+	# 궁 소리는 컷인 유무와 상관없이 **궁이 실제로 나가는 순간** 한 번(클래시에서 지면 여기까지 안 온다)
+	Sfx.play(self, ULTIMATE_SOUND, 0.0, 1.0, 0.0)
 	# **자기 연출을 따로 가진 궁은 컷인을 건너뛴다**(층간소음 영역전개 — 초인종·문 쾅 연출이 곧 컷인이다).
 	# 그런 궁에 기본 컷인 상자까지 뜨면 연출이 두 번 나오는 꼴이 된다(2026-10-04)
 	if skill_ultimate and "skip_cutin" in skill_ultimate and skill_ultimate.skip_cutin:

@@ -2488,12 +2488,20 @@ func _keep_air_swing_in_reach() -> void:
 		if off.length() - _air_reach_radius > far:
 			far = off.length() - _air_reach_radius
 			far_dir = off.normalized()
-	hand.position -= far_dir * far
+	# **복귀 구간(62% 뒤)에선 당기는 힘을 서서히 푼다**(2026-10-13 — 주정뱅이 3타 "끝에 술병이 톡 튄다").
+	# 끝까지 다 당기다가 모션이 끝나는 프레임에 한 번에 풀려 손·술병이 7~8px 앞으로 튀었다.
+	# 판정은 후리기(40~62%)에 끝나므로 복귀 중에 반원 밖으로 나가도 맞는 범위는 그대로다
+	var progress: float = 1.0 - _attack_time / maxf(_attack_len, 0.001)
+	var keep: float = 1.0
+	if progress > ATTACK_STRIKE_END:
+		var r: float = clampf((progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END), 0.0, 1.0)
+		keep = 1.0 - r * r * (3.0 - 2.0 * r)
+	hand.position -= far_dir * far * keep
 	# 반원이라 뒤쪽(원 가운데보다 뒤)도 판정 밖 — 가장 뒤에 있는 모서리만큼 앞으로
 	var back: float = 0.0
 	for v in corners:
 		back = maxf(back, _air_reach_center.x - (hand.position.x + v.x))
-	hand.position.x += back
+	hand.position.x += back * keep
 
 ## 오른손에 든 그림 중 가장 큰 것(무기 본체). 없거나 안 보이면 null
 func _held_weapon_sprite() -> Sprite2D:
@@ -2601,6 +2609,10 @@ func _pose_attack_hand() -> void:
 	else:
 		# ③ 원래 자세로 복귀
 		var p: float = (progress - ATTACK_STRIKE_END) / (1.0 - ATTACK_STRIKE_END)
+		# 공중 큰 휘두르기(주정뱅이 3타 포함)는 **점점 느려지며** 제자리에 닿는다 — 일정한 속도로 오면
+		# 술병이 빠르게 오다가 마지막 프레임에 딱 멈춰 "톡 튀는" 것처럼 보였다(2026-10-13). 다른 타는 그대로
+		if _attack_variant == AIR_SWING_VARIANT:
+			p = 1.0 - (1.0 - p) * (1.0 - p)
 		angle = lerpf(swing_deg, 0.0, p)
 		offset = slam_off.lerp(Vector2.ZERO, p)
 	var hand: Sprite2D = _attack_hand()

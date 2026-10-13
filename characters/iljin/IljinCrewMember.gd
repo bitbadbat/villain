@@ -29,6 +29,8 @@ extends CharacterBody2D
 ## **`spit_scene`이 비어 있으면 아무것도 안 한다** — 여자친구는 비워둬서 그냥 서 있기만 한다.
 ## 순서: 하늘색 파선으로 경고(`spit_warn_time`) -> 침이 일직선으로 날아감 -> `spit_interval` 뒤 반복
 @export var spit_scene: PackedScene
+
+const SPIT_SOUND: AudioStream = preload("res://audio/헛스윙2.mp3")
 ## 경고로 띄울 하늘색 파선 (`skills/SpitWarning.gd`)
 @export var warning_script: Script
 ## 침을 뱉는 간격(초)과 나타난 뒤 첫 침까지의 시간(초)
@@ -250,6 +252,8 @@ func _fire_spit() -> void:
 		spit.lifetime = spit_range / spit_speed
 	map.add_child(spit)
 	spit.global_position = global_position + _mouth_offset()
+	# "퉤" — 침 소리 파일이 없어서 짧은 헛스윙(휙)을 재활용
+	Sfx.play(self, SPIT_SOUND)
 	if spit.has_method("setup"):
 		# 주인을 일진으로 넘겨야 "캐릭터의 공격"이 돼서 방어로 막히고 일진 자신은 안 맞는다.
 		# 일진이 이미 사라졌으면 주인 없는 판정(맵 피해)이 된다

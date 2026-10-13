@@ -143,6 +143,10 @@ func _ready() -> void:
 		item.set("position", pos + Vector2(0.0, reveal_rise))
 	if clears_story:
 		GameState.mark_story_cleared(GameState.current_story_id)
+	else:
+		# **여기까지 봤다고 적어 둔다**(2026-10-13 사용자: 자동 저장). 마지막 장면은 위에서
+		# 클리어로 기록하며 이어 할 자리를 지우므로 여기 오지 않는다
+		GameState.save_story_point(scene_file_path)
 	if _carry != null and Time.get_ticks_msec() - _carry_msec < 3000:
 		# 앞 장면 마지막 화면을 맨 위(마지막 자식)에 덮는다 — 첫 프레임부터 덮여 있어서 새 장면이 번쩍 보이지 않는다
 		_overlay = TextureRect.new()

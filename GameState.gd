@@ -158,6 +158,13 @@ var current_story_id: String = ""
 ## 한 번이라도 끝까지 본 에피소드 id들 (user://settings.cfg의 [story] cleared에 저장)
 var story_cleared: PackedStringArray = PackedStringArray()
 
+## --- 스토리 자동 저장(2026-10-13 사용자) ---
+## **마지막으로 본 이야기 장면**과 그 에피소드. 장면이 뜰 때마다 덮어써서,
+## 메인 메뉴로 나가거나 게임을 껐다 켜도 그 자리부터 이어 할 수 있다.
+## 에피소드를 끝까지 보면 지운다 — 다 본 이야기를 "이어 하시겠습니까"로 물으면 이상하다
+var story_saved_episode: String = ""
+var story_saved_scene: String = ""
+
 ## --- 스토리 전투 난이도(2026-10-01) ---
 ## **이야기 장면(`StoryFadeScene`)이 정하고 `Stage`가 소환할 때 적용한다.** 에피소드마다 다른 값을 줄 수 있게
 ## 상수가 아니라 여기에 담아 넘긴다. 전부 1.0이면 평소 대전과 똑같다(대전 모드는 아예 안 읽는다).
@@ -321,6 +328,46 @@ func mark_story_cleared(episode_id: String) -> void:
 		return
 	story_cleared.append(episode_id)
 	_save_setting("story", "cleared", story_cleared)
+	clear_story_save()   # 다 본 이야기는 이어 할 자리가 없다
+
+## **지금 보고 있는 이야기 장면을 적어 둔다**(2026-10-13 사용자: 자동 저장).
+## 장면이 뜰 때마다 불리므로 늘 "가장 멀리 간 자리"가 남는다.
+## 대전 모드이거나 에피소드를 모르면 아무 것도 안 한다
+func save_story_point(scene_path: String) -> void:
+	if game_mode != "story" or current_story_id == "" or scene_path == "":
+		return
+	if story_saved_episode == current_story_id and story_saved_scene == scene_path:
+		return   # 같은 자리를 또 쓰지 않는다 — 장면을 다시 봐도 파일은 한 번만 건드린다
+	story_saved_episode = current_story_id
+	story_saved_scene = scene_path
+	_save_setting("story", "saved_episode", story_saved_episode)
+	_save_setting("story", "saved_scene", story_saved_scene)
+
+## 이어 할 기록이 있는지 — 장면 파일이 사라졌으면(이야기를 갈아엎었으면) 없는 것으로 친다
+func has_story_save() -> bool:
+	return story_saved_scene != "" and ResourceLoader.exists(story_saved_scene)
+
+## 적어 둔 자리에서 이야기를 잇는다. 기록이 없거나 깨졌으면 false
+func resume_story() -> bool:
+	if not has_story_save():
+		return false
+	game_mode = "story"
+	current_story_id = story_saved_episode
+	story_next_scene = ""
+	reset_round_wins()
+	get_tree().change_scene_to_file(story_saved_scene)
+	return true
+
+## 이어 하기 기록을 지운다 — 에피소드를 끝까지 봤거나 처음부터 다시 시작할 때
+func clear_story_save() -> void:
+	story_saved_episode = ""
+	story_saved_scene = ""
+	_save_setting("story", "saved_episode", "")
+	_save_setting("story", "saved_scene", "")
+
+## 이어 할 기록이 어느 에피소드인지 — 확인 창에 이름을 띄우려고
+func saved_story_name() -> String:
+	return str(story_episode(story_saved_episode).get("name", ""))
 
 ## res://.env 파일을 한 줄씩 읽어서 KEY=VALUE 형식을 파싱한다 (# 시작 줄은 주석으로 무시)
 func _load_env() -> void:
@@ -371,6 +418,8 @@ func _load_settings() -> void:
 	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
 	tutorial_seen = config.get_value("progress", "tutorial_seen", tutorial_seen)
 	story_cleared = config.get_value("story", "cleared", PackedStringArray())
+	story_saved_episode = config.get_value("story", "saved_episode", "")
+	story_saved_scene = config.get_value("story", "saved_scene", "")
 
 ## user://settings.cfg의 한 항목을 갱신한다. 매번 새로 열고 닫아서 다른 항목을 덮어쓰지 않는다
 func _save_setting(section: String, key: String, value) -> void:

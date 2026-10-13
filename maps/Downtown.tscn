@@ -95,6 +95,7 @@ size = Vector2(40, 2400)
 script = ExtResource("1")
 map_skill_scene = ExtResource("ms_trash")
 trash_collect_mode = true
+hud_panels_top = true
 screen_grade = ExtResource("grade")
 
 [node name="DecoBackdropSky" type="Polygon2D" parent="." unique_id=1075318281]

@@ -72,6 +72,9 @@ extends Control
 ## **(임시) 숫자 1·2로 그 에피소드 바로 시작.** 위와 같은 종류의 디버그 열쇠다 —
 ## 에피소드 고르는 화면이 생기면 이 값과 쓰는 자리를 같이 지운다
 @export var debug_episode_keys: bool = true
+## **개발자 모드** — F1을 누르면 승패 연출 미리보기(`ui/dev/ResultPreview.tscn`)로 간다(2026-10-11 사용자 요청:
+## 승리/패배 화면을 보려고 매번 한 판을 다 하지 않게). 출시할 땐 끌 것
+@export var debug_dev_key: bool = true
 
 @onready var _illust: MenuIllust = $Illust
 @onready var _confirm: ConfirmPopup = $ConfirmPopup
@@ -359,8 +362,31 @@ func _place_illustration() -> void:
 	_illust.scale = Vector2.ONE * factor
 	_illust.position = illust_center - size * factor * 0.5
 
+## 스토리 버튼 — **이어 할 기록이 있으면 두 갈래로 묻는다**(2026-10-13 사용자).
+## 없으면 예전처럼 "플레이하시겠습니까?" 한 갈래
 func _on_story_pressed() -> void:
+	if GameState.has_story_save():
+		var where: String = GameState.saved_story_name()
+		var message: String = "저장된 기록이 있습니다.
+이어서 하시겠습니까?"
+		if where != "":
+			message = "저장된 기록이 있습니다. (%s)
+이어서 하시겠습니까?" % where
+		_pending = func(): _resume_story()
+		_pending_alternate = func(): _restart_story()
+		_confirm.open_choice(message, "이어하기", "처음부터")
+		return
 	_ask("스토리 모드를 플레이하시겠습니까?", _start_story)
+
+## 적어 둔 자리에서 잇는다 — 장면이 사라졌으면(이야기를 갈아엎었으면) 처음부터
+func _resume_story() -> void:
+	if not GameState.resume_story():
+		_restart_story()
+
+## 처음부터 — 적어 둔 자리를 지우고 1화부터 다시
+func _restart_story() -> void:
+	GameState.clear_story_save()
+	_start_story()
 
 func _on_versus_pressed() -> void:
 	_ask("대전 모드를 플레이하시겠습니까?", _start_versus)
@@ -450,6 +476,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	# **(임시) 숫자 1·2를 누르면 그 에피소드로 바로 들어간다** — 스토리 손볼 때마다
 	# 메뉴 -> 확인창 -> 1화 처음부터 보는 게 번거로워서 넣었다(2026-10-07 사용자 요청).
 	# 정식 기능이 아니므로 에피소드 고르는 화면이 생기면 지울 것
+	if debug_dev_key and event is InputEventKey:
+		var dev: InputEventKey = event
+		if dev.pressed and not dev.echo and dev.keycode == KEY_F1:
+			# 씬을 바꾸기 전에 입력을 먹었다고 표시한다(바뀐 뒤엔 get_viewport()가 null)
+			get_viewport().set_input_as_handled()
+			get_tree().change_scene_to_file("res://ui/dev/ResultPreview.tscn")
+			return
 	if debug_episode_keys and event is InputEventKey:
 		var jump: InputEventKey = event
 		if jump.pressed and not jump.echo:

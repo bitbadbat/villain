@@ -27,6 +27,8 @@ const BOO := "boo"
 const RAIN := "rain"
 ## 연행 장면 사이렌
 const SIREN := "siren"
+## 경찰이 우는 아이 머리를 "툭" — 게임의 펀치 피격음을 작고 높게 틀어 쓴다(이름 대신 경로도 된다)
+const TAP := "res://Sound/펀치피격.wav"
 
 ## 사이렌(siren.ogg)의 **높은음이 시작되는 때**(초, 소리 처음 기준). 낮은음은 그 0.5초 뒤에 시작한다.
 ## 경광등을 소리에 맞춰 깜빡이려고 2026-10-08에 실제 파형에서 음높이를 재서 적었다(높은음 약 1312Hz / 낮은음 약 732Hz).
@@ -57,8 +59,10 @@ static func siren_tone_at(t: float) -> Vector2:
 		return Vector2(1.0, local)
 	return Vector2(-1.0, local - SIREN_HIGH_LEN)
 
-## 이름에 맞는 소리 파일을 찾는다. 없으면 null
+## 이름에 맞는 소리 파일을 찾는다(`res://`로 시작하면 그 경로 그대로). 없으면 null
 static func stream(sound: String) -> AudioStream:
+	if sound.begins_with("res://"):
+		return load(sound) as AudioStream if ResourceLoader.exists(sound) else null
 	for ext in EXTENSIONS:
 		var path: String = "%s%s.%s" % [DIR, sound, ext]
 		if ResourceLoader.exists(path):

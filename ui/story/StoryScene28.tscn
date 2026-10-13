@@ -1,0 +1,49 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
+[ext_resource type="Script" path="res://ui/story/SubwayClash.gd" id="2_clash"]
+[ext_resource type="Texture2D" uid="uid://dfxri5veees7k" path="res://sprite/storymode/지하철빌런/격돌/0_창밖.png" id="3_win"]
+[ext_resource type="Texture2D" uid="uid://j4lp0dhhsyw7" path="res://sprite/storymode/지하철빌런/격돌/1_내부.png" id="4_in"]
+[ext_resource type="Texture2D" uid="uid://njm5ttbn1bmf" path="res://sprite/storymode/지하철빌런/격돌/2_경찰.png" id="5_pol"]
+[ext_resource type="Texture2D" uid="uid://cfwofdb4n6sb1" path="res://sprite/storymode/지하철빌런/격돌/3_할아버지.png" id="6_vil"]
+
+[node name="StoryScene28" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+fade_in_time = 0.35
+hold_time = 3.4
+fade_out_time = 0.6
+next_scene = ""
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Clash" type="Node2D" parent="."]
+script = ExtResource("2_clash")
+window_texture = ExtResource("3_win")
+interior_texture = ExtResource("4_in")
+police_texture = ExtResource("5_pol")
+villain_texture = ExtResource("6_vil")
+
+[node name="Fade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

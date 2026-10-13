@@ -161,6 +161,7 @@
 `GameState.STORY_EPISODES`의 ep2에 `StoryScene13`을 꽂아서 일시정지 화면 목록에서 고를 수 있다.
 
 **(임시) 메인 메뉴에서 숫자 `1`·`2`를 누르면 그 에피소드로 바로 들어간다**(`MainMenu.debug_episode_keys`).
+**개발자 모드: 메인 메뉴에서 `F1` = 승패 연출 미리보기**(`ui/dev/ResultPreview.tscn`, `MainMenu.debug_dev_key` — 출시 땐 끌 것).
 ⚠️ `set_input_as_handled()`를 **`start_story()`보다 먼저** 불러야 한다 — 씬이 갈리면 `get_viewport()`가 null이 된다.
 에피소드 고르는 화면이 생기면 이 열쇠는 지울 것
 

@@ -1,0 +1,135 @@
+[gd_scene load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://ui/result/OnlookerRig.gd" id="0"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/입_다문.png" id="1"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/입_벌린.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/입_놀란.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/신발_왼.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/신발_오.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/몸통.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="7"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/머리.png" id="8"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/흰자_왼.png" id="9"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/눈동자_왼.png" id="10"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/흰자선_왼.png" id="11"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/감은눈_왼.png" id="12"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/흰자_오.png" id="13"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/눈동자_오.png" id="14"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/흰자선_오.png" id="15"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/감은눈_오.png" id="16"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/눈썹_왼.png" id="17"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/눈썹_오.png" id="18"]
+[ext_resource type="Texture2D" path="res://sprite/result/구경꾼/학생/소품.png" id="19"]
+
+[node name="OnlookerStudent" type="Node2D"]
+texture_filter = 4
+script = ExtResource("0")
+mouths = Array[Texture2D]([ExtResource("1"), ExtResource("2"), ExtResource("3")])
+idle_mouth = 1
+talk = false
+react_mouth = 2
+seed_value = 5
+prop_motion = 3
+
+[node name="FootL" type="Sprite2D" parent="."]
+position = Vector2(-11.9968, -9.1068)
+scale = Vector2(0.1663, 0.1663)
+texture = ExtResource("4")
+
+[node name="FootR" type="Sprite2D" parent="."]
+position = Vector2(11.9968, -6.986)
+scale = Vector2(0.1663, 0.1663)
+texture = ExtResource("5")
+
+[node name="Body" type="Sprite2D" parent="."]
+position = Vector2(3.9113, -33.0705)
+scale = Vector2(0.1198, 0.1198)
+texture = ExtResource("6")
+
+[node name="HandR" type="Sprite2D" parent="."]
+position = Vector2(27.258, -27.1124)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("7")
+
+[node name="Head" type="Node2D" parent="."]
+position = Vector2(-0.6703, -76.1427)
+
+[node name="HeadSprite" type="Sprite2D" parent="Head"]
+position = Vector2(0, 0)
+scale = Vector2(0.1231, 0.1231)
+texture = ExtResource("8")
+
+[node name="EyeL" type="Node2D" parent="Head"]
+position = Vector2(-20.3402, 7.4468)
+
+[node name="White" type="Sprite2D" parent="Head/EyeL"]
+clip_children = 2
+position = Vector2(0, 0)
+scale = Vector2(0.1108, 0.1108)
+texture = ExtResource("9")
+
+[node name="Pupil" type="Sprite2D" parent="Head/EyeL/White"]
+position = Vector2(0, 0)
+scale = Vector2(1, 1)
+texture = ExtResource("10")
+
+[node name="WhiteLine" type="Sprite2D" parent="Head/EyeL"]
+position = Vector2(0, 0)
+scale = Vector2(0.1108, 0.1108)
+texture = ExtResource("11")
+
+[node name="Closed" type="Sprite2D" parent="Head/EyeL"]
+visible = false
+position = Vector2(0, 0)
+scale = Vector2(0.1108, 0.1108)
+texture = ExtResource("12")
+
+[node name="EyeR" type="Node2D" parent="Head"]
+position = Vector2(-3.2926, 10.2162)
+
+[node name="White" type="Sprite2D" parent="Head/EyeR"]
+clip_children = 2
+position = Vector2(0, 0)
+scale = Vector2(0.1108, 0.1108)
+texture = ExtResource("13")
+
+[node name="Pupil" type="Sprite2D" parent="Head/EyeR/White"]
+position = Vector2(0, 0)
+scale = Vector2(1, 1)
+texture = ExtResource("14")
+
+[node name="WhiteLine" type="Sprite2D" parent="Head/EyeR"]
+position = Vector2(0, 0)
+scale = Vector2(0.1108, 0.1108)
+texture = ExtResource("15")
+
+[node name="Closed" type="Sprite2D" parent="Head/EyeR"]
+visible = false
+position = Vector2(0, 0)
+scale = Vector2(0.1108, 0.1108)
+texture = ExtResource("16")
+
+[node name="BrowL" type="Sprite2D" parent="Head"]
+position = Vector2(-20.8325, -0.5539)
+scale = Vector2(0.0985, 0.0985)
+texture = ExtResource("17")
+
+[node name="BrowR" type="Sprite2D" parent="Head"]
+position = Vector2(-2.6771, -2.4002)
+scale = Vector2(0.0985, 0.0985)
+texture = ExtResource("18")
+
+[node name="Mouth" type="Sprite2D" parent="Head"]
+position = Vector2(-13.9396, 21.6018)
+scale = Vector2(0.1046, 0.1046)
+texture = ExtResource("2")
+
+[node name="Prop" type="Sprite2D" parent="."]
+position = Vector2(-33.0381, -51.2309)
+scale = Vector2(0.0782, 0.0782)
+texture = ExtResource("19")
+
+[node name="HandL" type="Sprite2D" parent="."]
+position = Vector2(-28.2144, -34.847)
+scale = Vector2(0.11, 0.11)
+texture = ExtResource("7")

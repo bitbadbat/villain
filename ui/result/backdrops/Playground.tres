@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3]
 
 [ext_resource type="Script" path="res://ui/result/ArrestBackdropConfig.gd" id="1_config"]
-[ext_resource type="Texture2D" uid="uid://bqrmsyf51tfsh" path="res://ui/result/backdrops/놀이터_입구.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://uc41n2jqgy55" path="res://sprite/result/연행배경/놀이터_입구.png" id="2_tex"]
 
 [resource]
 script = ExtResource("1_config")
@@ -12,3 +12,17 @@ door_height = 1.35
 horizon_px = -1.0
 show_flags = false
 edge_fade = true
+ambient = Color(1, 0.97, 0.9, 1)
+rim_color = Color(1, 0.86, 0.58, 1)
+rim_dir = Vector2(-0.55, -1)
+rim_strength = 0.55
+rim_focus = 0.5
+shade_strength = 0.3
+facade_top = Color(1, 0.98, 0.9, 1)
+facade_bottom = Color(0.8, 0.86, 0.84, 1)
+facade_side = 0.12
+ground_shade = Color(0.7, 0.76, 0.86, 1)
+ground_shade_depth = 8.0
+sun_color = Color(1, 0.86, 0.55, 0.45)
+sun_shafts = Array[Vector3]([Vector3(150, 430, 46), Vector3(380, 420, 40), Vector3(588, 438, 48), Vector3(922, 436, 54)])
+dapple = 0.42

@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://ui/story/DialogueBox.tscn" id="4"]
 
 [node name="StoryScene12" type="Control"]
+next_scene = "res://ui/story/StoryClearScreen.tscn"
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

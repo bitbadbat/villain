@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3]
 
 [ext_resource type="Script" path="res://ui/result/ArrestBackdropConfig.gd" id="1_config"]
-[ext_resource type="Texture2D" uid="uid://c50p0gm2tst3a" path="res://ui/result/backdrops/번화가_건물.png" id="2_tex"]
+[ext_resource type="Texture2D" uid="uid://b5t6aayijieg" path="res://sprite/result/연행배경/번화가_건물_밤.png" id="2_tex"]
 
 [resource]
 script = ExtResource("1_config")
@@ -12,3 +12,18 @@ door_height = 1.35
 horizon_px = -1.0
 show_flags = false
 edge_fade = true
+night = true
+ambient = Color(0.44, 0.5, 0.72, 1)
+ground_tint = 0.72
+rim_color = Color(0.8, 0.92, 1, 1)
+rim_dir = Vector2(0.1, -1)
+rim_strength = 1.05
+rim_focus = 0.15
+shade_strength = 0.45
+gradient_strength = 0.1
+siren_power = 0.5
+light_rects = Array[Rect2]([Rect2(366, 600, 803, 74), Rect2(641, 88, 252, 79), Rect2(639, 215, 257, 85), Rect2(637, 348, 260, 86), Rect2(636, 485, 263, 86), Rect2(58, 200, 260, 69), Rect2(42, 318, 268, 76), Rect2(28, 464, 274, 87), Rect2(28, 586, 277, 68), Rect2(1219, 200, 261, 74), Rect2(1225, 320, 269, 75), Rect2(1234, 467, 279, 89), Rect2(1239, 588, 273, 76), Rect2(380, 685, 234, 210), Rect2(663, 685, 209, 210), Rect2(921, 685, 244, 210), Rect2(0, 700, 306, 200), Rect2(1235, 700, 301, 200)])
+light_colors = PackedColorArray(1, 0.93, 0.9, 0.7, 0.98, 0.44, 0.12, 0.75, 1, 0.81, 0.16, 0.7, 1, 0.45, 0.16, 0.8, 0.93, 0.25, 0.63, 0.8, 0.24, 0.55, 0.87, 0.75, 0.97, 0.16, 0.2, 0.75, 1, 0.86, 0.6, 0.55, 0.81, 0.13, 0.15, 0.75, 0.03, 0.46, 0.88, 0.75, 0.11, 0.48, 0.24, 0.75, 0.59, 0.16, 0.8, 0.75, 0.91, 0.16, 0.18, 0.75, 0.92, 0.96, 1, 1, 0.92, 0.96, 1, 1, 0.92, 0.96, 1, 1, 1, 0.75, 0.43, 1, 0.88, 0.43, 1, 1)
+reflection = 0.32
+vignette = 0.75
+rim_px = 3.0

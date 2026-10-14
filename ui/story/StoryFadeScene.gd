@@ -92,6 +92,18 @@ const CONTINUE_INDICATOR_SCENE := "res://ui/ContinueIndicator.tscn"
 ## 그건 계속 꺼 둔다(S가 P1 방어 키라서, 켜 두면 싸우다 방어할 때마다 전투가 끝나 버린다).
 ## 스토리를 다 만들면 이 기능도 같이 지울 것
 @export var debug_skip_key: bool = true
+## **오른쪽 위에 건너뛰기 버튼을 띄울지**(2026-10-14 사용자). 끄면 S 키만 남는다
+## **건너뛰기가 갈 곳**(2026-10-14 사용자). 비워 두면 바로 다음 장면(`next_scene`)으로 간다.
+## 제압 컷신처럼 여러 장이 한 덩어리인 구간에서는 **그 끝(경찰서)**을 여기 적어 두면 한 번에 건너뛴다.
+## 여기로 갈 때는 전투 설정을 안 챙긴다 — 이야기 장면으로 바로 가는 길이라 싸울 일이 없다
+@export_file("*.tscn") var skip_to_scene: String = ""
+@export var show_skip_button: bool = true
+@export var skip_button_size: Vector2 = Vector2(132.0, 40.0)
+@export var skip_button_margin: Vector2 = Vector2(18.0, 16.0)
+@export var skip_font_size: int = 17
+@export var skip_color: Color = Color(0.07, 0.06, 0.1, 0.55)
+@export var skip_text_color: Color = Color(1, 1, 1, 0.92)
+@export var skip_font: Font = null
 ## **숫자 8을 누르면 띄워 보는 그림**(2026-10-06). 만들던 컷신을 스토리 안에서 바로 확인하려고 둔 칸이다.
 ## 한 번 더 누르면 없어진다. 비워 두면 8이 아무 일도 안 한다.
 ## 화면 **맨 위**에 얹힌다 — `Fade`보다 뒤에 붙으므로 검은 전환 위에도 그대로 보인다
@@ -123,6 +135,7 @@ func _ready() -> void:
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if show_pause_button and ResourceLoader.exists(PAUSE_BUTTON_SCENE):
 		add_child(load(PAUSE_BUTTON_SCENE).instantiate())
+	_build_skip_button()
 	_add_continue_indicator()
 	for path in hide_on_start:
 		var hidden_item: CanvasItem = get_node_or_null(path) as CanvasItem
@@ -267,10 +280,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var key: InputEventKey = event
 		if key.pressed and not key.echo and (key.keycode == KEY_S or key.physical_keycode == KEY_S):
 			if next_scene != "" and ResourceLoader.exists(next_scene):
-				_carry = null
-				_setup_battle()
 				get_viewport().set_input_as_handled()
-				get_tree().change_scene_to_file(next_scene)   # 임시 건너뛰기 — 페이드 없이 바로
+				_skip_scene()   # 페이드 없이 바로 — 버튼과 같은 길
 			return
 	if event.is_action_pressed("ui_cancel"):
 		# **ESC는 메인 메뉴로 나가는 게 아니라 일시정지 화면을 띄운다**(2026-09-15 사용자 요청).
@@ -316,3 +327,60 @@ func _add_continue_indicator() -> void:
 	add_child(indicator)
 	move_child(indicator, _fade.get_index())
 	indicator.set_watch_target(box)
+
+## **오른쪽 위 건너뛰기 버튼**(2026-10-14 사용자). `debug_skip_key`(S)와 같은 길로 간다 —
+## 코드로 만들어 붙이므로 **스토리 장면 전부에 저절로 생긴다**(스물여덟 장을 하나씩 안 고쳐도 된다).
+## 다음 장면이 없는 마지막 장면에서는 안 만든다 — 눌러도 아무 데도 못 가니 있으면 고장 난 것처럼 보인다
+func _build_skip_button() -> void:
+	var target: String = skip_to_scene if skip_to_scene != "" else next_scene
+	if not show_skip_button or target == "" or not ResourceLoader.exists(target):
+		return
+	var button := Button.new()
+	button.name = "SkipButton"
+	button.text = "건너뛰기 ▶▶"
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.custom_minimum_size = skip_button_size
+	# ⚠️ **자리는 앵커로 잡는다.** 화면 크기로 계산하면 늘이기 설정에 따라 창 크기가 들어와서
+	# 버튼이 화면 밖으로 나간다(2026-10-14 실측: 뷰포트 1280인데 2560으로 읽혔다)
+	button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	button.offset_left = -skip_button_margin.x - skip_button_size.x
+	button.offset_right = -skip_button_margin.x
+	button.offset_top = skip_button_margin.y
+	button.offset_bottom = skip_button_margin.y + skip_button_size.y
+	button.add_theme_font_size_override("font_size", skip_font_size)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(state, skip_text_color)
+	button.add_theme_stylebox_override("normal", _skip_box(skip_color))
+	button.add_theme_stylebox_override("hover", _skip_box(Color(skip_color.r, skip_color.g, skip_color.b,
+			minf(skip_color.a + 0.22, 1.0))))
+	button.add_theme_stylebox_override("pressed", _skip_box(Color(skip_color.r, skip_color.g, skip_color.b,
+			minf(skip_color.a + 0.34, 1.0))))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	if skip_font != null:
+		button.add_theme_font_override("font", skip_font)
+	button.pressed.connect(_skip_scene)
+	# ⚠️ `_ready`가 도는 중에는 부모가 자식을 세우고 있어서 바로 못 붙인다 —
+	# "Parent node is busy setting up children"이 뜬다(2026-10-14 실측). 한 박자 미룬다
+	add_child.call_deferred(button)
+
+func _skip_box(fill: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.border_color = Color(1, 1, 1, 0.5)
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(8)
+	box.content_margin_left = 10.0
+	box.content_margin_right = 10.0
+	return box
+
+## 이 장면을 건너뛰고 다음으로 — 버튼과 S 키가 같이 쓴다.
+## **대전으로 넘어가는 장면이면 전투 설정을 챙겨서 넘긴다**(`_setup_battle`)
+func _skip_scene() -> void:
+	var target: String = skip_to_scene if skip_to_scene != "" else next_scene
+	if target == "" or not ResourceLoader.exists(target):
+		return
+	_carry = null
+	if target == next_scene:
+		_setup_battle()   # 바로 다음이 대전이면 난이도·상대를 챙겨서 넘긴다
+	get_tree().change_scene_to_file(target)

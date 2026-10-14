@@ -17,13 +17,15 @@ extends Node2D
 ## 지점이고, 그 노드의 **크기(scale)**가 배율이다. 둘 다 끌어서 잡으면 된다.
 
 ## 이 컷인이 화면에 머무는 시간(초). UltimateCutIn이 이 값을 읽어 간다
-@export var cutin_duration: float = 4.8
+## 2026-10-14 사용자: "궁극기 연출이 너무 길다" — 4.8초에서 줄이고,
+## **단계 시점·지속을 전부 같은 비율(0.52)로** 같이 줄였다. 길이만 줄이면 뒷단계가 잘려 나간다
+@export var cutin_duration: float = 2.5
 
 @export_group("지나가는 열차")
 ## 열차가 들어오기 시작하는 시각(초). 그 전까지는 텅 빈 역만 보인다
-@export var train_start_at: float = 0.45
+@export var train_start_at: float = 0.23
 ## 열차가 화면을 가로지르는 데 걸리는 시간(초)
-@export var train_time: float = 1.2
+@export var train_time: float = 0.62
 ## 열차가 출발하는 x와 끝나는 x (World 기준, 화면 밖 -> 화면 밖).
 ## **열차 길이 절반(약 6116) + 화면 반폭(약 1032)보다 커야** 화면 안에서 툭 나타나지 않는다
 @export var train_from_x: float = 7500.0
@@ -64,22 +66,22 @@ extends Node2D
 
 @export_group("카메라 다가가기")
 ## 다가가기 시작하는 시각(초). 기본은 열차가 다 지나간 직후다
-@export var push_in_at: float = 1.7
+@export var push_in_at: float = 0.89
 ## 다가가는 데 걸리는 시간(초). 끝나면 딱 멈춘다
-@export var push_in_time: float = 0.75
+@export var push_in_time: float = 0.39
 
 @export_group("손 올리기 / 휙")
 ## 손이 악기로 올라가는 시각(초). **손 두 개가 HandLRaised/HandRRaised 자리로 올라간다** —
 ## 씬에서 그 두 노드를 끌어서 올라갈 자리를 잡으면 된다
-@export var raise_at: float = 2.75
+@export var raise_at: float = 1.43
 ## 손이 다 올라가는 데 걸리는 시간(초)
-@export var raise_time: float = 0.3
+@export var raise_time: float = 0.16
 ## 휙 하고 사라지는 시각(초)
-@export var vanish_at: float = 3.35
+@export var vanish_at: float = 1.74
 ## 휙 하고 오른쪽에서 나타나는 시각(초)
-@export var appear_at: float = 3.48
+@export var appear_at: float = 1.81
 ## 휙 한 번에 걸리는 시간(초). 짧을수록 순간이동처럼 보인다
-@export var whoosh_time: float = 0.06
+@export var whoosh_time: float = 0.03
 ## 사라질 때 오른쪽으로 밀려나는 거리(px). 짧은 시간에 멀리 가야 잔상처럼 쫙 빠진다
 @export var vanish_slide: float = 1100.0
 ## 나타날 때 오른쪽 이만큼 밖에서 들어온다(px)
@@ -89,7 +91,7 @@ extends Node2D
 ## 나타나는 순간 화면이 쿵 하고 흔들리는 폭(px)
 @export var impact_shake: float = 30.0
 ## 그 흔들림이 잦아드는 시간(초)와 떠는 속도
-@export var impact_time: float = 0.45
+@export var impact_time: float = 0.23
 @export var impact_speed: float = 64.0
 
 @export_group("선글라스 반짝")

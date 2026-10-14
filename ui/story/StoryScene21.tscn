@@ -12,6 +12,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
+skip_to_scene = "res://ui/story/StoryScene22.tscn"
 fade_in_time = 0.25
 crossfade_time = 0.12
 hold_time = 1.8

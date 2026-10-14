@@ -18,13 +18,15 @@ extends Node2D
 ## 스토리 전투를 이기면 결과창 대신 이 띠가 지나가고 바로 이야기로 넘어간다(승패 모션은 아직 없음)
 @export var story_win_text: String = "승리!"
 @export var story_lose_text: String = "패배"
-## (임시) 테스트용 — **스토리 전투 중 `S`를 누르면 이긴 것으로 치고 바로 다음 이야기로 넘어간다.**
-## 스토리 장면의 건너뛰기(`StoryFadeScene.debug_skip_key`)와 같은 키다. 스토리를 다 만들면 같이 지울 것.
+## (임시) 테스트용 — **스토리 전투 중 `넘버패드 5`를 누르면 이긴 것으로 치고 바로 다음 이야기로 넘어간다.**
+## 스토리를 다 만들면 지울 것.
 ##
-## **⚠️ `S`는 P1 아래 키(`p1_down`, 발판 내려가기)이기도 하다.** 그래서 스토리 전투에서 방어하려고 S를 누르면 전투가 그 자리에서 끝난다 —
-## 한 번 겪고 Shift+S로 바꿨다가, **테스트가 번거로워서 사용자가 다시 그냥 `S`로 돌려 달라고 했다**(2026-09-14).
-## 스토리 전투에서 방어를 테스트해야 할 땐 맵 루트의 `debug_story_skip_key`를 잠깐 끄면 된다.
-## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다
+## 키가 **넘버패드 5**인 이유: 처음엔 `S`였는데 **그게 P1 아래 키(`p1_down`, 발판 내려가기)라서**
+## 스토리 전투에서 내려가려고 S를 누를 때마다 전투가 그 자리에서 끝났다.
+## 한 번 Shift+S로 피했다가 번거로워 S로 되돌렸고, 2026-10-14에 **아무 조작에도 안 쓰이는 넘버패드 5**로 옮겼다.
+## **일반 대전에서는 아예 안 걸린다** — 스토리 모드이고 이어질 장면이 있을 때만 반응한다.
+##
+## 2026-10-14 사용자 요청으로 잠깐 켰다가 **같은 날 다시 껐다**(출품 빌드 준비)
 @export var debug_story_skip_key: bool = false
 
 ## **스토리 전투를 이겼을 때도 승리 → 패배 → 연행 연출을 보여줄지**(2026-10-08 사용자, 악플러 편).
@@ -706,8 +708,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if debug_story_skip_key and event is InputEventKey:
 		var key: InputEventKey = event
-		var is_s: bool = key.keycode == KEY_S or key.physical_keycode == KEY_S
-		if key.pressed and not key.echo and is_s:
+		var is_skip: bool = key.keycode == KEY_KP_5 or key.physical_keycode == KEY_KP_5
+		if key.pressed and not key.echo and is_skip:
 			# **입력 처리 표시를 장면 전환보다 먼저 해야 한다** — change_scene_to_file 뒤에는
 			# 이 노드가 트리에서 빠져서 get_viewport()가 null이 된다(실제로 그 에러를 봤다)
 			if _can_debug_skip_story_battle():

@@ -46,7 +46,7 @@
 [ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseRunMidPose.tscn" id="gym_run_mid_pose"]
 [ext_resource type="PackedScene" path="res://characters/floornoise/gym/FloorNoiseRunRightPose.tscn" id="gym_run_right_pose"]
 [ext_resource type="Texture2D" path="res://sprite/층간소음/올라잇층간소음.png" id="gym_face_rise"]
-[ext_resource type="Texture2D" path="res://sprite/층간소음/입벌리고있는층간소음.png" id="gym_face_fall"]
+[ext_resource type="Texture2D" path="res://sprite/층간소음/힘든층간소음.png" id="gym_face_fall"]
 
 [node name="BodyRig" unique_id=1130472801 instance=ExtResource("1_rig")]
 curl_face_rise = ExtResource("gym_face_rise")

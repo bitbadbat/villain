@@ -46,8 +46,9 @@ extends Skill
 @export_range(0.0, 8.0, 0.1) var room_blur: float = 0.5
 @export_range(0.0, 8.0, 0.1) var shelf_blur: float = 0.8
 @export_range(0.0, 8.0, 0.1) var sofa_blur: float = 0.3
-## 영역에 머무는 시간(초)
-@export var duration: float = 12.0
+## 영역에 머무는 시간(초).
+## 2026-10-14 사용자: "층간소음 모자가 너무 세다" — 12초에서 줄였다(침묵도 같이 2.4 -> 1.6)
+@export var duration: float = 8.0
 ## 배경 그림 배율 — 1944x809 그림이 0.72면 1400x583이 된다(화면 비율 2.39와 거의 같아 꽉 찬다).
 ## **이 값이 곧 궁 안 카메라 거리다.** 카메라 배율은 `enter_arena()`가 "영역 전체가 화면에 꽉 차게"
 ## 자동으로 정하고 `arena_close_zoom = 1`로 묶여 있어서, 줌을 직접 건드릴 수가 없다.

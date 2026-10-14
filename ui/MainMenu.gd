@@ -71,7 +71,7 @@ extends Control
 @export var debug_illust_key: bool = true
 ## **(임시) 숫자 1·2로 그 에피소드 바로 시작.** 위와 같은 종류의 디버그 열쇠다 —
 ## 에피소드 고르는 화면이 생기면 이 값과 쓰는 자리를 같이 지운다
-@export var debug_episode_keys: bool = true
+@export var debug_episode_keys: bool = false
 ## **개발자 모드** — F1을 누르면 승패 연출 미리보기(`ui/dev/ResultPreview.tscn`)로 간다(2026-10-11 사용자 요청:
 ## 승리/패배 화면을 보려고 매번 한 판을 다 하지 않게). 출시할 땐 끌 것
 @export var debug_dev_key: bool = true

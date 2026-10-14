@@ -419,7 +419,10 @@ func _load_settings() -> void:
 	set_music_volume(config.get_value("audio", "music_volume", music_volume))
 	set_sfx_volume(config.get_value("audio", "sfx_volume", sfx_volume))
 	dialogue_hint_seen = config.get_value("progress", "dialogue_hint_seen", dialogue_hint_seen)
-	tutorial_seen = config.get_value("progress", "tutorial_seen", tutorial_seen)
+	# **튜토리얼은 켤 때마다 다시 보여준다**(2026-10-14 사용자). 그래서 저장해 둔 값을 안 읽는다 —
+	# 한 번이라도 봤으면 영영 안 뜨는 게 아니라, 게임을 새로 켜면 그 판에서는 처음처럼 군다.
+	# 같은 판 안에서는 `mark_tutorial_seen()`이 기억해서 두 번 들어가지 않는다
+	# tutorial_seen = config.get_value("progress", "tutorial_seen", tutorial_seen)
 	story_cleared = config.get_value("story", "cleared", PackedStringArray())
 	story_saved_episode = config.get_value("story", "saved_episode", "")
 	story_saved_scene = config.get_value("story", "saved_scene", "")
@@ -539,7 +542,7 @@ func mark_tutorial_seen() -> void:
 	if tutorial_seen:
 		return
 	tutorial_seen = true
-	_save_setting("progress", "tutorial_seen", true)
+	# 파일에는 안 남긴다 — 다음에 켤 때 또 보여줘야 하므로(2026-10-14 사용자)
 
 ## 지금 소리가 꺼져 있어야 하는 상태인지 (내보낸 빌드 + MUTE_IN_BUILD).
 ## `OS.has_feature("editor")`는 에디터에서 실행할 때만 true라 빌드와 구분된다

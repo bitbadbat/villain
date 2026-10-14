@@ -29,6 +29,9 @@ extends Hitbox
 ## **돌아오며 때리는 피해**를 나갈 때 피해의 몇 배로 할지. 1.0이면 1타와 같은 피해가 한 번 더 들어간다.
 ## 넉백·띄우기는 나갈 때와 똑같다(사용자 요청: "넉백은 뭐 동일하게")
 @export var return_damage_ratio: float = 1.0
+## 돌아오는 길에 **더 얹는 피해**(2026-10-14 사용자). 궁의 "모든 피해 1.5배"를 뺀 대신 둔 보상이라
+## 배수가 아니라 고정값이다 — 평타 한 타가 세질수록 같이 불어나지 않는다
+@export var return_damage_bonus: int = 1
 ## 날아가는 동안 위아래로 살짝 흔들리는 폭(px)과 빠르기 — 수평으로만 가면 자로 그은 것처럼 보인다
 @export var wobble: float = 5.0
 @export var wobble_speed: float = 13.0
@@ -81,7 +84,7 @@ func recall(src: Hitbox = null) -> void:
 	_phase = Phase.BACK
 	_copy_hit_values(src)
 	# 돌아오는 길은 추가타다 — 나갈 때 피해에 배수를 건다(넉백·띄우기는 그대로)
-	damage = maxi(int(round(float(_out_damage) * return_damage_ratio)), 1)
+	damage = maxi(int(round(float(_out_damage) * return_damage_ratio)) + return_damage_bonus, 1)
 	# 나갈 때 맞은 상대도 돌아올 때 다시 맞아야 한다 — 지난 기록을 지운다
 	clear_repeat_state()
 	_arm(true)

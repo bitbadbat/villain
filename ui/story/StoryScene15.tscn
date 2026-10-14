@@ -13,6 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
+skip_to_scene = "res://ui/story/StoryScene17.tscn"
 fade_in_time = 0.8
 dialogue = NodePath("DialogueBox")
 reveal = Array[NodePath]([NodePath("Screen")])

@@ -58,6 +58,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
+skip_to_scene = "res://ui/story/StoryScene3.tscn"
 next_scene = "res://ui/story/StoryScene2.tscn"
 hold_time = 1.5
 out_transition = 1

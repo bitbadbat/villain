@@ -12,6 +12,9 @@
 [ext_resource type="PackedScene" path="res://skills/RunningKid.tscn" id="23_kid"]
 [ext_resource type="Script" path="res://skills/FloorDomainUltimate.gd" id="24_domain"]
 [ext_resource type="Script" path="res://skills/KidDropkick.gd" id="25_kick"]
+[ext_resource type="Texture2D" uid="uid://c4uuh5522w4j7" path="res://sprite/층간소음/스킬로고/1번스킬.png" id="30_icon1"]
+[ext_resource type="Texture2D" uid="uid://1qwddhi2gmru" path="res://sprite/층간소음/스킬로고/2번스킬.png" id="31_icon2"]
+[ext_resource type="Texture2D" uid="uid://c80n1uycgehr7" path="res://sprite/층간소음/스킬로고/궁극기.png" id="32_iconult"]
 [ext_resource type="VideoStream" uid="uid://cdiqhxxgsy2fu" path="res://sprite/도감/영상/층간소음_기본공격.ogv" id="vid_atk"]
 [ext_resource type="VideoStream" uid="uid://c82uytop5dug7" path="res://sprite/도감/영상/우리애가어려서요.ogv" id="vid_scream"]
 [ext_resource type="VideoStream" uid="uid://dd20w6r6a0js8" path="res://sprite/도감/영상/뛰어놀게두세요.ogv" id="vid_rush"]
@@ -78,6 +81,7 @@ script = ExtResource("25_kick")
 script = ExtResource("20_scream")
 cooldown = 10.0
 skill_name = "우리 애가 어려서요"
+icon = ExtResource("30_icon1")
 demo_video = ExtResource("vid_scream")
 description = "품에 안긴 아이가 악을 쓴다. 소리가 닿은 상대는 4초 동안 기본공격을 못 쓴다. 이동과 스킬은 그대로다."
 scream_scene = ExtResource("21_screamfx")
@@ -86,6 +90,7 @@ scream_scene = ExtResource("21_screamfx")
 script = ExtResource("22_rush")
 cooldown = 8.0
 skill_name = "뛰어놀게 두세요"
+icon = ExtResource("31_icon2")
 demo_video = ExtResource("vid_rush")
 description = "아이를 바닥에 내려놓는다. 아이가 앞으로 쿵쿵 달려갔다가 돌아와 다시 안긴다. 나가 있는 동안에는 악쓰기를 못 쓴다."
 kid_scene = ExtResource("23_kid")
@@ -95,5 +100,6 @@ script = ExtResource("24_domain")
 cooldown = 45.0
 start_on_cooldown = true
 skill_name = "층간소음 체험"
+icon = ExtResource("32_iconult")
 demo_video = ExtResource("vid_ult")
 description = "두 사람을 위아래 두 층짜리 집으로 끌고 간다. 위층은 층간소음 모자, 아래층은 상대. 걷고 뛰고 아이를 풀어놓는 것이 전부 아래층으로 내려꽂는 충격파가 된다."

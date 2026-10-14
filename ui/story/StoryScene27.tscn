@@ -20,6 +20,7 @@ fade_in_time = 0.45
 hold_time = 1.2
 fade_out_time = 0.6
 next_scene = "res://maps/SubwayPlatform.tscn"
+battle_win_scene = "res://ui/story/StoryScene28.tscn"
 battle_p1 = "res://characters/police/Police.tscn"
 battle_p2 = "res://characters/subwayvillain/SubwayVillain.tscn"
 battle_rounds = 2

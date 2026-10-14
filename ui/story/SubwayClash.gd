@@ -39,12 +39,13 @@ extends Node2D
 @export var window_copies: int = 3
 
 @export_group("달려들기")
-## 두 사람이 화면 밖 어디서 출발하는지(화면 폭 대비). 1이면 화면 하나만큼 바깥
-@export var rush_from: float = 0.62
+## 두 사람이 화면 밖 어디서 출발하는지(화면 폭 대비). 1이면 화면 하나만큼 바깥.
+## **멀리서 아주 빠르게 날아와 꽂히는 맛**을 내려고 1 너머까지 뺐다(2026-10-14 사용자)
+@export var rush_from: float = 1.15
 ## 달려드는 데 걸리는 시간(초)
-@export var rush_time: float = 0.42
+@export var rush_time: float = 0.17
 ## 부딪히기 전 잠깐 멈춰 서는 시간(초) — 바로 달려들면 눈이 못 따라간다
-@export var rush_delay: float = 0.35
+@export var rush_delay: float = 0.3
 
 @export_group("충돌")
 ## 그림을 화면보다 이만큼 크게 그린다 — **흔들릴 때 가장자리가 드러나지 않게** 하는 여유분
@@ -187,7 +188,8 @@ func _scroll_windows(delta: float) -> void:
 
 ## u가 0이면 화면 밖, 1이면 부딪힌 자리
 func _place_fighters(u: float) -> void:
-	var eased: float = 1.0 - pow(1.0 - u, 3.0)   # 쭉 빨라지다 탁 멈춘다
+	# 5제곱으로 떨어뜨린다 — 거의 끝까지 멀리 있다가 **마지막 순간에 확** 꽂힌다
+	var eased: float = 1.0 - pow(1.0 - u, 5.0)
 	var away: float = _screen().x * rush_from * (1.0 - eased)
 	# 부딪힌 뒤에는 서로 밀어내듯 잘게 떤다
 	var push: float = 0.0

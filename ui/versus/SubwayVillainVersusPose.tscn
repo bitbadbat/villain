@@ -1,41 +1,41 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://dyaktd1cu0hwe"]
 
-[ext_resource type="Texture2D" path="res://sprite/지하철빌런/지하철빌런몸.png" id="1_body"]
-[ext_resource type="Texture2D" path="res://sprite/body/손.png" id="2_hand"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌런/단소.png" id="3_danso"]
-[ext_resource type="Texture2D" path="res://sprite/지하철빌런/입벌린지하철.png" id="4_head"]
-[ext_resource type="Script" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
+[ext_resource type="Texture2D" uid="uid://b7om7hgyn46aj" path="res://sprite/지하철빌런/지하철빌런몸.png" id="1_body"]
+[ext_resource type="Texture2D" uid="uid://b6xd71mv2ie75" path="res://sprite/body/손.png" id="2_hand"]
+[ext_resource type="Texture2D" uid="uid://2jj1i0d4xypr" path="res://sprite/지하철빌런/단소.png" id="3_danso"]
+[ext_resource type="Texture2D" uid="uid://btglqca18bxt" path="res://sprite/지하철빌런/지하철아저씨분노.png" id="4_head"]
+[ext_resource type="Script" uid="uid://g0bgdfnmavsq" path="res://ui/versus/VersusPosePreview.gd" id="9_preview"]
 
-[node name="SubwayVillainVersusPose" type="Node2D"]
+[node name="SubwayVillainVersusPose" type="Node2D" unique_id=1962230099]
 
-[node name="Body" type="Sprite2D" parent="."]
-position = Vector2(0, 348)
-scale = Vector2(1.0, 1.0)
+[node name="Body" type="Sprite2D" parent="." unique_id=2092086849]
+position = Vector2(-25.000004, 341)
+scale = Vector2(0.27365938, 0.30580562)
 texture = ExtResource("1_body")
 
-[node name="HandL" type="Sprite2D" parent="."]
-position = Vector2(-140, 400)
-scale = Vector2(0.75, 0.75)
+[node name="HandL" type="Sprite2D" parent="." unique_id=834746884]
+position = Vector2(61.000008, 351.00003)
+scale = Vector2(1.0370688, 1.0370688)
 texture = ExtResource("2_hand")
 flip_h = true
 
-[node name="Danso" type="Sprite2D" parent="."]
-position = Vector2(150, 300)
-rotation = -0.6
-scale = Vector2(1.0, 1.0)
+[node name="Danso" type="Sprite2D" parent="." unique_id=1498953654]
+position = Vector2(173, 233.99998)
+rotation = -0.8185594
+scale = Vector2(0.325, 0.317)
 texture = ExtResource("3_danso")
 
-[node name="HandR" type="Sprite2D" parent="."]
-position = Vector2(150, 360)
-scale = Vector2(0.78, 0.78)
+[node name="HandR" type="Sprite2D" parent="." unique_id=615888524]
+position = Vector2(11, 382)
+scale = Vector2(1.0313793, 1.0313793)
 texture = ExtResource("2_hand")
 
-[node name="Head" type="Sprite2D" parent="."]
-position = Vector2(0, 84)
-scale = Vector2(1.0, 1.0)
+[node name="Head" type="Sprite2D" parent="." unique_id=935909911]
+position = Vector2(-21.999992, 86)
+scale = Vector2(0.34, 0.34)
 texture = ExtResource("4_head")
 
-[node name="Preview" type="Node2D" parent="."]
+[node name="Preview" type="Node2D" parent="." unique_id=1092626062]
 z_index = -100
 script = ExtResource("9_preview")
 origin_on_screen = Vector2(1020, 223)

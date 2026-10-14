@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://ui/story/StoryFadeScene.gd" id="1"]
 [ext_resource type="PackedScene" path="res://ui/story/SubwayVillainIdle.tscn" id="2_idle"]
+[ext_resource type="Texture2D" uid="uid://c1olju4tkodv0" path="res://sprite/storymode/지하철빌런/지하철에앉아있는지하철빌런_0005_Background_0001_배경.png" id="3_seat"]
+[ext_resource type="Texture2D" uid="uid://dlfygbtvhebtr" path="res://sprite/storymode/지하철빌런/지하철에앉아있는지하철빌런_0005_Background_0000_다리.png" id="4_legs"]
 
 [node name="StoryScene26" type="Control"]
 layout_mode = 3
@@ -12,6 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
+skip_to_scene = "res://ui/story/StoryScene27.tscn"
 fade_in_time = 0.5
 hold_time = 3.1
 fade_out_time = 0.6
@@ -42,6 +45,8 @@ bang_lift = -11.0
 bang_rebound = 3.0
 bang_shake = 2.5
 sway_amount = 2.0
+background_texture = ExtResource("3_seat")
+legs_texture = ExtResource("4_legs")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

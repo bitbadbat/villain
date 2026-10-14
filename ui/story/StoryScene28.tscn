@@ -16,10 +16,11 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
+skip_to_scene = "res://ui/story/StoryClearScreen.tscn"
 fade_in_time = 0.35
 hold_time = 3.4
 fade_out_time = 0.6
-next_scene = ""
+next_scene = "res://ui/story/StoryScene29.tscn"
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1

@@ -22,6 +22,9 @@ const INK := Color(0.06, 0.05, 0.08)
 ## 버튼 바탕 — 결과창과 같은 납작한 노랑
 @export var button_color: Color = Color(1.0, 0.82, 0.18)
 @export var background_color: Color = Color(0.07, 0.06, 0.11)
+## **마지막 화를 깼을 때 덧붙는 한 줄.** 다음 화가 없으면 제목 아래에 뜬다
+@export var finale_text: String = "모든 스토리 모드 클리어!"
+@export var finale_color: Color = Color(0.62, 0.95, 0.75)
 
 var _next_id: String = ""
 
@@ -87,8 +90,26 @@ func _build() -> void:
 
 	_next_id = _find_next_episode()
 	var waves: Array[Control] = [subtitle, title]
+
+	# **마지막 화를 깼으면 다 끝냈다고 알린다**(2026-10-14 사용자). 다음 화가 없다 = 마지막이다
+	if _next_id == "":
+		var all_done := Label.new()
+		all_done.text = finale_text
+		all_done.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		all_done.add_theme_font_size_override("font_size", 30)
+		all_done.add_theme_color_override("font_color", finale_color)
+		_outline(all_done, 7)
+		if font:
+			all_done.add_theme_font_override("font", font)
+		box.add_child(all_done)
+		# 제목 바로 아래로 올린다 — 이 줄은 버튼 줄이 붙은 뒤에 만들어져서 그냥 두면 버튼 밑에 깔린다
+		box.move_child(all_done, 2)
+		waves.append(all_done)
+
 	if _next_id != "":
-		var next_button := _make_button("다음 에피소드", font)
+		# 버튼에 **다음 화 이름**을 그대로 쓴다("EP.2 악플러") — 어디로 가는지가 버튼에 보인다(2026-10-14 사용자)
+		var next_name: String = str(GameState.story_episode(_next_id).get("name", "")).replace("-", " ")
+		var next_button := _make_button(next_name if next_name != "" else "다음 에피소드", font)
 		next_button.pressed.connect(_on_next_pressed)
 		row.add_child(next_button)
 		waves.append(next_button)
@@ -134,7 +155,7 @@ func _find_next_episode() -> String:
 func _make_button(text: String, font: Font) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(230.0, 62.0)
+	button.custom_minimum_size = Vector2(250.0, 62.0)
 	button.add_theme_stylebox_override("normal", _box(button_color))
 	button.add_theme_stylebox_override("hover", _box(button_color.lightened(0.25)))
 	button.add_theme_stylebox_override("pressed", _box(button_color.darkened(0.18)))

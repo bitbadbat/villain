@@ -118,6 +118,7 @@ func _ready() -> void:
 	if auto_place_illustration:
 		_place_illustration()
 	_collect_illustrations()
+	_fit_wide_backgrounds()
 	_build_menu()
 	_screen_fade.color.a = 1.0
 	_confirm.confirmed.connect(_on_confirmed)
@@ -233,6 +234,34 @@ func _animate_menu(delta: float) -> void:
 		if text:
 			var target: Color = menu_text_color_focus if focused else menu_text_color
 			text.add_theme_color_override("font_color", text.get_theme_color("font_color").lerp(target, t))
+
+
+## **화면이 16:9보다 넓으면 배경을 화면에 맞춰 덮는다**(2026-10-14 울트라와이드 지원).
+## 배경은 Sprite2D라 자리·크기를 씬에서 손으로 잡아 뒀는데, 늘이기 설정이 `expand`라
+## 넓은 화면에서는 좌우가 더 보이면서 **배경 바깥의 빈 바닥이 드러난다**.
+##
+## ⚠️ 키우기만 하면 모자란다 — 씬에 잡아 둔 중심이 화면 가운데가 아니라서(x=717, 화면 가운데는 640)
+## 키운 그림이 오른쪽으로 쏠리고 **왼쪽이 빈다**(2026-10-14 실측). 중심도 화면 가운데로 옮긴다
+func _fit_wide_backgrounds() -> void:
+	var view: Vector2 = get_viewport_rect().size
+	if view.x <= 1280.0:
+		return
+	for node in _backgrounds:
+		if node == null or not is_instance_valid(node):
+			continue
+		var sprite := node as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		if not node.has_meta("base_transform"):
+			node.set_meta("base_transform", [node.position, node.scale])
+		var saved: Array = node.get_meta("base_transform")
+		var home: Vector2 = saved[0]
+		var base_scale: Vector2 = saved[1]
+		# 씬에 잡아 둔 크기로 그렸을 때의 화면 크기 — 이게 화면보다 작으면 그만큼 더 키운다
+		var drawn: Vector2 = Vector2(sprite.texture.get_size()) * base_scale
+		var cover: float = maxf(maxf(view.x / drawn.x, view.y / drawn.y), 1.0)
+		node.scale = base_scale * cover
+		node.position = Vector2(view.x * 0.5, home.y)
 
 ## 이름이 "Illust"/"Background"로 시작하는 자식을 트리 순서대로 모으고, 첫 짝만 남기고 숨긴다.
 ## "Fx"로 시작하는 효과판은 여기서 안 모은다 — 트리 순서가 아니라 이름으로 짝짓는다(_pair_effect 참고)

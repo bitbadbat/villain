@@ -239,8 +239,11 @@ const KEYBIND_VERSION := 3
 ## RoomSettings의 "현재 설정 저장"이 방 설정 프리셋을 저장할 때 쓰는 section 이름(SETTINGS_PATH 안)
 const ROOM_PRESET_SECTION := "room_presets"
 
-## 창 모드에서 고를 수 있는 해상도 (전부 16:9라 검은 여백 없이 꽉 채워짐)
-const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]
+## 창 모드에서 고를 수 있는 해상도.
+## 앞의 셋은 16:9라 화면이 꽉 찬다. 마지막은 **울트라와이드(21:9)**로,
+## 늘이기 설정이 `expand`라 세로는 그대로 두고 **좌우를 더 보여준다**(2026-10-14 사용자 요청).
+## 맵은 그만큼 넓게 보이고, 16:9로 그린 메뉴 배경은 `MainMenu`가 화면에 맞춰 키운다
+const RESOLUTIONS: Array[Vector2i] = [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3440, 1440)]
 const DEFAULT_MASTER_VOLUME := 1.0
 ## 볼륨은 **세 갈래**다(2026-09-27) — 전체 / 음악 / 효과음.
 ## 엔진 버스는 Master 하나뿐이라, 시작할 때 Music·Sfx 버스를 만들어 Master 밑에 달아준다.

@@ -137,6 +137,7 @@ func _build_menu() -> void:
 		"StoryItem": _on_story_pressed,
 		"VersusItem": _on_versus_pressed,
 		"TrainingItem": _on_training_pressed,
+		"TutorialItem": _on_tutorial_pressed,
 		"GuideItem": _on_guide_pressed,
 		"SettingsItem": _on_settings_pressed,
 	}
@@ -417,11 +418,12 @@ func _start_versus() -> void:
 	GameState.reset_round_wins()
 	get_tree().change_scene_to_file("res://ui/RoomSettings.tscn")
 
-## 훈련장 버튼은 두 갈래 — 훈련장 / 튜토리얼(2026-10-01). ESC면 아무 데도 안 감
+## 훈련장·튜토리얼은 **메뉴 칸을 따로** 쓴다(2026-10-21 사용자 — 예전엔 훈련장 한 칸에서 두 갈래 창으로 골랐다)
 func _on_training_pressed() -> void:
-	_pending = func(): get_tree().change_scene_to_file("res://maps/TrainingGround.tscn")
-	_pending_alternate = func(): get_tree().change_scene_to_file("res://maps/Tutorial.tscn")
-	_confirm.open_choice("어디로 갈까요?", "훈련장", "튜토리얼")
+	get_tree().change_scene_to_file("res://maps/TrainingGround.tscn")
+
+func _on_tutorial_pressed() -> void:
+	get_tree().change_scene_to_file("res://maps/Tutorial.tscn")
 
 func _on_alternate_chosen() -> void:
 	_pending = Callable()

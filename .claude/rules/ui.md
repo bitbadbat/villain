@@ -8,7 +8,7 @@ paths:
 
 # 화면 흐름 / UI
 
-- `ui/Disclaimer.tscn` → `TitleScreen` → `MainMenu`(스토리/대전/훈련장/가이드/설정). 대전: `RoomSettings` → `CharacterSelect` → `MapSelect` → 맵
+- `ui/Disclaimer.tscn` → `TitleScreen` → `MainMenu`(스토리/대전/훈련장/**튜토리얼**/가이드/설정 — 2026-10-21 훈련장 한 칸의 두 갈래 창에서 튜토리얼을 따로 뺐다, 칸 간격 92px). 대전: `RoomSettings` → `CharacterSelect` → `MapSelect` → 맵
 - `GameState.gd`(오토로드)가 화면 사이 값을 들고 다님. ESC = 한 단계 뒤로, 대전·스토리 중엔 `PauseMenu`(`process_mode = ALWAYS`)
 - 폰트 주아체 — 기호 글리프 없음(코드로 그릴 것). 대화창은 나눔고딕
 - **타이틀 구경 모드**(`game_mode == "attract"`): 랜덤 맵·AI 둘, HUD·컷인 없음. 떠날 때 `game_mode` "pvp" + 배율 복구. 로고는 `tools/make_title_logo.py`(**로고를 바꾸면 다시 돌릴 것**)

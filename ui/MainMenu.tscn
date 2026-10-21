@@ -247,12 +247,47 @@ theme_override_font_sizes/font_size = 30
 text = "훈련장"
 vertical_alignment = 1
 
-[node name="GuideItem" type="Button" parent="Menu" unique_id=2051641406]
+[node name="TutorialItem" type="Button" parent="Menu" unique_id=1564836438]
 layout_mode = 0
 offset_left = -80.0
 offset_top = 462.0
 offset_right = 460.0
 offset_bottom = 546.0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
+flat = true
+
+[node name="Slide" type="Control" parent="Menu/TutorialItem" unique_id=376653961]
+anchors_preset = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+
+[node name="Shape" type="TextureRect" parent="Menu/TutorialItem/Slide" unique_id=431170220]
+modulate = Color(0.14509805, 0.16470589, 0.20392157, 0.82)
+material = SubResource("ShaderMaterial_outline")
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 84.0
+mouse_filter = 2
+texture = ExtResource("8_slant")
+
+[node name="Text" type="Label" parent="Menu/TutorialItem/Slide" unique_id=1674243544]
+layout_mode = 0
+offset_left = 176.0
+offset_right = 510.0
+offset_bottom = 84.0
+theme_override_colors/font_color = Color(0.91764706, 0.91764706, 0.91764706, 1)
+theme_override_fonts/font = ExtResource("17_font_medium")
+theme_override_font_sizes/font_size = 30
+text = "튜토리얼"
+vertical_alignment = 1
+
+[node name="GuideItem" type="Button" parent="Menu" unique_id=2051641406]
+layout_mode = 0
+offset_left = -80.0
+offset_top = 554.0
+offset_right = 460.0
+offset_bottom = 638.0
 theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 
@@ -285,9 +320,9 @@ vertical_alignment = 1
 [node name="SettingsItem" type="Button" parent="Menu" unique_id=1973460666]
 layout_mode = 0
 offset_left = -80.0
-offset_top = 554.0
+offset_top = 646.0
 offset_right = 460.0
-offset_bottom = 638.0
+offset_bottom = 730.0
 theme_override_styles/focus = SubResource("StyleBoxEmpty_nofocus")
 flat = true
 

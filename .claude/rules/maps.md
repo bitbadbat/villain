@@ -86,11 +86,11 @@ paths:
 - P1 = 경찰(3타 콤보 필요). **교관 = 진짜 황근출 Fighter**(HP 10만, `immovable`, 컨트롤러 없이 `_drive_instructor`가 굴림). 실습 구간에만 `_set_instructor_hittable(true)`. 3타로 날아가면 제자리로 걸어 돌아옴 → `_on_instructor_home()`이 실습을 끝냄
 - **처음 켠 사람만** 타이틀 → 튜토리얼(`GameState.tutorial_seen`). 메뉴 훈련장 버튼에서도 갈 수 있음
 - 말풍선 `maps/SpeechBubble.gd`(@tool, 전부 `_draw()`): **원점 = 꼬리 끝 = 가리키는 곳**. 교관 자식이면 글자가 뒤집혀 맵 직속. `say(text, hint, press_hint_delay)`(BBCode), `icon("guard"/"dash"/"parry")`, `finish_typing()`, `close()`. 폰트 강한육군 Bold — **모든 `*_font_size` 슬롯 지정**(빼면 `[b]`가 16px). ⚠️ "썌"는 글리프 없음 → "쌔"
-- 대사 `Tutorial.gd` (2026-10-07 개편): 교관 500px 안에 들면 시작. **대사는 `_build_lines()`의 순서가 곧 진행 순서**(번호 상수 없음) — 한 줄 = `_line(text, {gate|phase, goal})`
-  - `gate`(move/jump/parkour/guard/dash) = 그 행동을 해야 넘어감(`_update_gates`), `phase`(hit/parry/skill1/skill2/ult/fight) = 스페이스에 말풍선 닫히고 실습 시작, 끝나면 다음 줄. 둘 다 없으면 스페이스
+- 대사 `Tutorial.gd` (2026-10-07 개편, **2026-10-21 "요소가 너무 많다"로 12줄·실습 7개로 줄임** — 파쿠르 발판·패링 실습·스킬2·궁 실습·맵 스킬 대사·추임새를 뺐다. 다시 넣으려면 git 이력 `_start_parkour`/`_drive_parry`): 교관 500px 안에 들면 시작. **대사는 `_build_lines()`의 순서가 곧 진행 순서**(번호 상수 없음) — 한 줄 = `_line(text, {gate|phase, goal})`
+  - `gate`(move/jump/guard/dash) = 그 행동을 해야 넘어감(`_update_gates`), `phase`(hit/skill1/fight) = 스페이스에 말풍선 닫히고 실습 시작, 끝나면 다음 줄. 둘 다 없으면 스페이스
   - `goal` = 화면 아래 흰 알약(`_show_goal`). 키 이름은 설정에서 읽음(`_key("down")` → "S") — **대사에 키를 글자로 박지 말 것**
-  - 스킬 실습: 쿨을 0으로 비우고 헛쏘면 `SKILL_RETRY_COOLDOWN`(1.5초)으로 깎음. 성공 = 스킬을 쏜 뒤 `SKILL_HIT_WINDOW` 안에 교관 `damaged`. 궁은 쓰기만 하면 통과(컷인 노드가 없어 바로 나감)
-  - 카메라는 항상 플레이어 고정. 플레이어 HP는 패링 시범 중 35% 밑이면 채움, 싸움에서 지면 둘 다 채우고 재시작
+  - 스킬 실습(스킬1만): 쿨을 0으로 비우고 헛쏘면 `SKILL_RETRY_COOLDOWN`(1.5초)으로 깎음. 성공 = 스킬을 쏜 뒤 `SKILL_HIT_WINDOW` 안에 교관 `damaged`
+  - 카메라는 항상 플레이어 고정. 싸움에서 지면 둘 다 채우고 재시작. 세부 규칙(패링·쿨타임·맵 스킬)은 가이드 메뉴 몫
 
 ## 훈련장 `maps/TrainingGround.tscn`
 

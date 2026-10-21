@@ -4,10 +4,11 @@ extends Node2D
 ## 배경: 하늘 < 랜덤 구름 < 산 < 숲 < 건물·막사·국기 < 땅. 교관(황근출)이 말풍선으로 조작을 가르친다.
 ##
 ## 진행은 `_lines`(대사 한 줄 = Dictionary) 순서대로다(2026-10-07에 번호 상수에서 바꿈):
-##  - `gate`  : 스페이스가 아니라 **이 행동을 해야** 다음 줄로 넘어가는 줄(move/jump/parkour/guard/dash)
-##  - `phase` : 스페이스를 누르면 말풍선이 닫히고 **이 실습이 시작**되는 줄(hit/parry/skill1/skill2/ult/fight). 실습이 끝나면 다음 줄
+##  - `gate`  : 스페이스가 아니라 **이 행동을 해야** 다음 줄로 넘어가는 줄(move/jump/guard/dash)
+##  - `phase` : 스페이스를 누르면 말풍선이 닫히고 **이 실습이 시작**되는 줄(hit/skill1/fight). 실습이 끝나면 다음 줄
 ##  - `goal`  : 그동안 화면 아래 흰 알약에 띄우는 목표 문장
 ## 그 외 줄은 스페이스로 넘어간다. 키 이름은 설정에서 바꾼 키를 그대로 읽어 적는다(`_key()`)
+## 2026-10-21 "요소가 너무 많다"로 줄임 — 파쿠르 발판·패링 실습·스킬2·궁 실습·맵 스킬 대사·추임새를 뺐다(세부 규칙은 메뉴 가이드로)
 
 ## 훈련 더미 stats는 샌드백용이라 move_speed가 0 — 조작용으로 복제해 이 속도를 넣는다
 @export var player_move_speed: float = 411.75
@@ -50,52 +51,9 @@ const MOVE_GATE_DELAY := 2.0
 ## 움직이기 줄에서 말이 끝난 뒤 흐른 시간(초)
 var _move_wait: float = 0.0
 
-## 땅 윗면 월드 y (발판 윗면 높이·솟는 자리 기준)
+## 땅 윗면 월드 y (먼지가 이는 자리 기준)
 @export var ground_top_y: float = 393.0
-## 1·2단 발판 윗면이 땅 윗면에서 이만큼 위(px). 1단=땅에서 1점프(그림 한 장이 딱 땅에 닿는 높이),
-## 2단=1단에서 더블점프로 겨우 닿게(1단과의 차이 190px, 더블점프 최대 ≈216px)
-@export var platform1_rise: float = 55.0
-@export var platform2_rise: float = 245.0
-## 두 발판의 x (플레이어 왼쪽 = 음수, 위로 갈수록 더 왼쪽인 계단식). 두 발판 폭이 안 겹치게 띄울 것
-@export var platform1_x: float = -150.0
-@export var platform2_x: float = -360.0
-## 나무 발판 상판(서는 면)의 화면 폭 목표 — 이미지는 이 폭에 맞춰 줄인다
-@export var platform_plank_width: float = 190.0
 
-# 나무 발판 그림(sprite/맵/튜토리얼/). 둘은 캔버스가 같아도 상판 위치·폭이 달라 따로 잰 값을 쓴다.
-const PLATFORM_TEX_1 := "res://sprite/맵/튜토리얼/나무 폴랫폼.png"
-const PLATFORM_TEX_2 := "res://sprite/맵/튜토리얼/나무 폴랫폼2.png"
-## [상판 윗면 y, 상판 왼끝 x, 상판 오른끝 x, 그림 맨아랫변 y] — PowerShell로 알파 측정(그림을 바꾸면 다시 잴 것)
-const PLATFORM_GEO_1 := [204.0, 51.0, 1723.0, 738.0]
-const PLATFORM_GEO_2 := [18.0, 110.0, 1667.0, 868.0]
-## 발판이 땅 밑에 숨는 깊이(땅 윗면 아래 이만큼) — 솟기 전·가라앉은 뒤 자리
-const PLATFORM_HIDE_DEPTH := 8.0
-## 충돌 상자를 땅 밑으로 이만큼 더 깊이 박는다(땅과 틈 없이 이어지게)
-const PLATFORM_COLL_BURY := 40.0
-
-var _parkour_active: bool = false
-var _parkour_done: bool = false
-var _platform1: StaticBody2D
-var _platform2: StaticBody2D
-## 발판2 꼭대기에 한 번이라도 올라섰나(그 뒤 왼쪽으로 떨어져 땅에 닿으면 발판이 사라진다)
-var _reached_p2: bool = false
-
-## 교관이 기본공격하는 간격(초) / 이 거리(px)까지 다가가 공격 / 이 거리(px) 안이면 공격을 낸다
-const PARRY_ATTACK_INTERVAL := 2.5
-const PARRY_FOLLOW_GAP := 52.0
-const PARRY_ATTACK_RANGE := 85.0
-## 처음 공격까지 기다리는 시간(초) / 패링에 성공한 뒤 X 아이콘을 보여 주는 시간(초)
-const PARRY_FIRST_DELAY := 1.0
-const PARRY_SUCCESS_WAIT := 1.6
-## 시범 중 플레이어 체력이 이 비율 아래로 떨어지면 가득 채워 준다(튜토리얼에서 KO는 없다)
-const PARRY_SAFE_HP_RATIO := 0.35
-
-var _parry_active: bool = false
-## 패링에 성공해 X 아이콘을 보여 준 뒤 원래 자리로 걸어 돌아가는 중
-var _parry_returning: bool = false
-var _parry_succeeded: bool = false
-var _parry_timer: float = 0.0
-var _parry_wait: float = 0.0
 ## 이 줄이 뜬 뒤 대시 쿨이 끝나 있는 걸 확인했나(이전 대시의 쿨 때문에 바로 넘어가지 않게)
 var _dash_armed: bool = false
 
@@ -103,9 +61,7 @@ var _dash_armed: bool = false
 const SKILL_RETRY_COOLDOWN := 1.5
 ## 스킬을 쏜 뒤 이 초 안에 교관이 맞아야 "스킬로 맞힌 것"으로 친다(주먹으로 때린 걸 스킬 성공으로 안 치게)
 const SKILL_HIT_WINDOW := 2.5
-## 궁을 쓴 뒤 다음 대사까지 기다리는 시간(초) — 경봉을 뽑는 모션을 보여 준다
-const ULT_FINISH_WAIT := 1.0
-## 지금 진행 중인 스킬 실습("skill1"/"skill2"/"ult", 없으면 "")
+## 지금 진행 중인 스킬 실습("skill1", 없으면 "")
 var _skill_phase: String = ""
 ## 이번 실습에서 스킬을 쏜 뒤 흐른 시간(초). 음수면 아직 안 쐈다
 var _skill_fired_for: float = -1.0
@@ -193,7 +149,6 @@ func _build_lines() -> Array[Dictionary]:
 	var L := _key("left")
 	var R := _key("right")
 	var guard_sec := _sec_text(_fighter.effective_guard_duration())
-	var guard_cd := _sec_text(Fighter.guard_cooldown)
 	var lock_sec := _sec_text(Fighter.blocked_attack_lock)
 	var dash_cd := _sec_text(_fighter.effective_dash_cooldown())
 	var lines: Array[Dictionary] = [
@@ -201,49 +156,25 @@ func _build_lines() -> Array[Dictionary]:
 		_line("%s! 지금부터 %s을 시작한다. 대사는 %s로 넘긴다" % [_em("신병"), _em("훈련"), _em("스페이스")]),
 		_line("%s %s 로 움직일 수 있다. %s 실시!" % [_k("left"), _k("right"), _em("움직인다")],
 			{"gate": "move", "goal": "%s / %s 키로 움직이세요" % [L, R]}),
-		_line("좋다 %s" % _em("신병")),
 		_line("%s로 %s를 한다. 공중에서 한 번 더 누르면 %s이다. 뛰어 봐라!" % [_k("jump"), _em("점프"), _em("더블 점프")],
 			{"gate": "jump", "goal": "%s 키로 점프하세요" % _key("jump")}),
-		_line("하지만 너무 높이 점프하면 %s할 때 %s이 있다. 조심하도록 해라!" % [_em("착지"), _em("경직")]),
-		_line("자 이제! 네가 %s이 아니란 걸 %s! 저 발판 %s까지 올라갔다가 %s으로 내려와라!" % [_em("폐급"), _em("증명해라"), _em("꼭대기"), _em("왼쪽")],
-			{"gate": "parkour", "goal": "발판 꼭대기에 올라갔다가 왼쪽 땅으로 내려오세요"}),
 		# --- 기본 공격 ---
-		_line("기본 공격은 %s키다" % _k("basic_attack")),
-		_line("기본 공격을 %s 치면 %s이 돈다. (너무 %s 하지 말라는 뜻)" % [_em("헛"), _em("쿨타임"), _em("연타")]),
-		_line("한 번 %s 최대 %s까지 쿨타임 없이 이어서 때릴 수 있다" % [_em("맞추면"), _em("2번")]),
-		_line("%s를 맞추면 적은 날아가며 %s 및 %s한다. 콤보를 잘 써 봐라" % [_em("3번째"), _em("넉백"), _em("기절")]),
+		_line("기본 공격은 %s키다. 한 번 %s 쿨타임 없이 이어서 때릴 수 있고, %s를 맞추면 적이 %s" % [_k("basic_attack"), _em("맞추면"), _em("3번째"), _em("날아간다")]),
 		_line("말로는 모르겠지? %s! %s를 %s 맞춰서 나를 날려 보내라!" % [_em("나를 쳐 봐라"), _k("basic_attack"), _em("3번 연속")],
 			{"phase": "hit", "goal": "%s 키를 3번 연속 맞춰 교관을 날려 보내세요" % _key("basic_attack")}),
-		_line("기본 공격 수준을 보아하니 평소에 %s 했겠군 %s" % [_em("게임만"), _em("신병")]),
-		# --- 방어 / 패링 ---
-		_line("이제 %s와 %s을 알려주지" % [_em("방어"), _em("패링")]),
-		_line("방어는 %s 동시에 누르기다. 누른 순간부터 %s 동안 %s이 켜지고, 맵에서 나오는 %s 말고는 %s를 막는다" % [_em(_guard_key()), _em(guard_sec), _em("보호막"), _em("기믹 피해"), _em("모든 피해")]),
-		_line("방어 중엔 %s. 그리고 %s %s가 있다 — 방어 %s 로 네 %s에 표시된다" % [_em("움직이지도 때리지도 못한다"), _em("쿨타임"), _em(guard_cd), _bubble.icon("guard"), _em("뒤쪽")]),
-		_line("한번 %s 봐라!" % _em("눌러"),
+		# --- 방어 ---
+		_line("방어는 %s 동시에 누르기다. %s 동안 %s이 켜지고, 그동안은 %s" % [_em(_guard_key()), _em(guard_sec), _em("보호막"), _em("움직이지도 때리지도 못한다")]),
+		_line("방어 중에 상대의 기본 공격을 %s 그놈은 %s 동안 %s(%s). 한번 %s 봐라!" % [_em("막아내면"), _em(lock_sec), _em("주먹을 못 쓴다"), _em("패링"), _em("눌러")],
 			{"gate": "guard", "goal": "%s 키를 같이 눌러 방어하세요" % _guard_key()}),
-		_line("좋다. 이제 %s이다" % _em("패링")),
-		_line("방어 중에 상대의 기본 공격을 %s 피해를 받지 않고, 때린 상대는 %s 동안 %s" % [_em("막아내면"), _em(lock_sec), _em("기본 공격을 못 쓰게 된다")]),
-		_line("막힌 쪽 %s에는 빨간 %s 가 뜬다. X가 사라질 때까지 그놈은 주먹을 못 쓴다" % [_em("뒤쪽"), _bubble.icon("parry")]),
-		_line("내가 %s을 할 테니 때리는 %s에 맞춰 %s! 너의 %s을 보여줘라 알겠나!?" % [_em("기본 공격"), _em("순간"), _em(_guard_key()), _em("패링")],
-			{"phase": "parry", "goal": "교관이 때리는 순간에 맞춰 %s 키로 막으세요" % _guard_key()}),
-		_line("좋다 %s" % _em("신병")),
 		# --- 대시 ---
-		_line("이제 %s다. %s 또는 %s를 %s 눌러라" % [_em("대시"), _k("left"), _k("right"), _em("빠르게 2번 연속")],
+		_line("%s는 %s 또는 %s를 %s 눌러라. %s %s가 있으니 주의!" % [_em("대시"), _k("left"), _k("right"), _em("빠르게 2번 연속"), _em("쿨타임"), _em(dash_cd)],
 			{"gate": "dash", "goal": "%s %s 또는 %s %s 로 대시하세요" % [L, L, R, R]}),
-		_line("대시도 %s %s가 있으니 %s하도록! 대시 %s 로 뒤쪽에 표시된다" % [_em("쿨타임"), _em(dash_cd), _em("주의"), _bubble.icon("dash")]),
 		# --- 스킬 / 궁극기 ---
-		_line("이제 %s이다. 캐릭터마다 %s 둘, %s 하나가 있다" % [_em("스킬"), _em("스킬"), _em("궁극기")]),
-		_line("%s는 %s이다. 네 %s으로 나를 쏴 봐라!" % [_k("skill_1"), _em("1번 스킬"), _em("테이저건")],
+		_line("캐릭터마다 %s 둘, %s 하나가 있다. %s는 %s, 네 %s이다. 나를 쏴 봐라!" % [_em("스킬"), _em("궁극기"), _k("skill_1"), _em("1번 스킬"), _em("테이저건")],
 			{"phase": "skill1", "goal": "%s 키로 테이저건을 쏴서 교관을 맞히세요" % _key("skill_1")}),
-		_line("%s는 %s이다. %s을 던져 봐라!" % [_k("skill_2"), _em("2번 스킬"), _em("돌")],
-			{"phase": "skill2", "goal": "%s 키로 돌을 던져 교관을 맞히세요" % _key("skill_2")}),
-		_line("스킬은 %s이 길다. 대전에선 화면 위 %s이 다시 차오르면 쓸 수 있다" % [_em("쿨타임"), _em("스킬 칸")]),
-		_line("%s은 %s다. 대전에선 쓰는 순간 %s이 나온다. 써 봐라!" % [_k("ultimate"), _em("궁극기"), _em("컷인 연출")],
-			{"phase": "ult", "goal": "%s 키로 궁극기를 쓰세요" % _key("ultimate")}),
-		_line("%s을 든 동안은 기본 공격이 %s 세진다. 맵마다 %s로 쓰는 %s도 있으니 맵 설명을 잘 봐라" % [_em("경관봉"), _em("두 배로"), _k("map_skill"), _em("맵 전용 스킬")]),
+		_line("%s는 %s, %s은 %s다. 스킬은 %s이 기니 아껴 써라. 자세한 건 메뉴의 %s에서 봐라" % [_k("skill_2"), _em("2번 스킬"), _k("ultimate"), _em("궁극기"), _em("쿨타임"), _em("가이드")]),
 		# --- 마지막 테스트 ---
-		_line("이제 %s를 할 거다 %s!" % [_em("마지막 테스트"), _em("신병")]),
-		_line("이등병 키자.. 아니;; %s와 싸워서 %s 악!" % [_em("이등병 똥자루"), _em("이겨라")],
+		_line("이제 %s다 %s! %s와 싸워서 %s 악!" % [_em("마지막 테스트"), _em("신병"), _em("이등병 똥자루"), _em("이겨라")],
 			{"phase": "fight", "goal": "이등병 똥자루를 쓰러뜨리세요"}),
 		_line("좋다. 이 정도면 이제 %s은 끝난 것 같다. 캐릭터·맵 설명은 메뉴의 %s에서 볼 수 있다" % [_em("훈련"), _em("가이드")]),
 	]
@@ -264,8 +195,6 @@ func _process(delta: float) -> void:
 		_fighter.velocity = Vector2.ZERO
 	_update_tutorial(delta)
 	_update_gates(delta)
-	_update_parkour(delta)
-	_update_parry_phase(delta)
 	_update_skill_phase(delta)
 	_update_fight()
 
@@ -297,9 +226,6 @@ func _say_current() -> void:
 	_move_wait = 0.0
 	_dash_armed = false
 	_show_goal("")
-	# 파쿠르 줄을 띄우는 순간 발판이 솟는다
-	if gate == "parkour":
-		_start_parkour()
 
 ## 스페이스바: 타이핑 중이면 즉시 다 띄운다. 행동으로 넘어가는 줄은 스페이스로 안 넘어간다.
 ## 실습(phase)이 붙은 줄은 스페이스에 말풍선이 닫히고 실습이 시작된다 — 실습이 끝나야 다음 줄
@@ -314,9 +240,7 @@ func _advance() -> void:
 	match _phase():
 		"hit":
 			_start_hit_phase()
-		"parry":
-			_start_parry_phase()
-		"skill1", "skill2", "ult":
+		"skill1":
 			_start_skill_phase(_phase())
 		"fight":
 			_start_fight()
@@ -344,7 +268,7 @@ func _update_gates(delta: float) -> void:
 	if _step != Step.TALK or _bubble == null:
 		return
 	var gate := _gate()
-	if gate == "" or gate == "parkour":
+	if gate == "":
 		return
 	if _bubble.is_typing():
 		_move_wait = 0.0
@@ -371,123 +295,6 @@ func _update_gates(delta: float) -> void:
 			elif ratio < 1.0:
 				_go_next_line()
 
-# --- 파쿠르 발판 ---
-
-## 파쿠르 줄을 띄우면: 나무 발판 1·2단이 땅에서 먼지와 함께 솟아오른다.
-func _start_parkour() -> void:
-	if _parkour_active or _parkour_done:
-		return
-	_parkour_active = true
-	_reached_p2 = false
-	_platform1 = _make_platform(platform1_x, platform1_rise, PLATFORM_TEX_1, PLATFORM_GEO_1)
-	_platform2 = _make_platform(platform2_x, platform2_rise, PLATFORM_TEX_2, PLATFORM_GEO_2)
-	_raise_platform(_platform1, 0.0)
-	_raise_platform(_platform2, 0.18)
-
-## 나무 발판 하나를 만들어 맵에 붙인다. 위·아래·옆이 다 막히는 통짜 벽이고, 땅까지 이어진다.
-## rise = 상판 윗면이 땅 윗면에서 얼마나 위인가(px). 바디 원점 = 상판 윗면(서는 면).
-## 그림 한 장 높이로 rise를 못 채우면 같은 그림을 아래로 여러 장 쌓는다(맨 아래 장은 땅 밑으로 들어가 땅 그림이 덮는다).
-## geo = [상판 윗면 y(px), 상판 왼끝 x, 상판 오른끝 x, 그림 맨아랫변 y] — 그림마다 달라 따로 받는다.
-func _make_platform(x: float, rise: float, tex_path: String, geo: Array) -> StaticBody2D:
-	var plank_top: float = geo[0]
-	var art_h_px: float = geo[3] - geo[0]                      # 상판 윗면 ~ 그림 맨아래
-	var plank_w_px: float = geo[2] - geo[1]
-	var tex_scale: float = platform_plank_width / plank_w_px   # 상판이 목표 폭이 되게 그림을 줄인다
-	var piece_h: float = art_h_px * tex_scale                  # 한 장이 차지하는 화면 높이
-	var tex: Texture2D = load(tex_path)
-	var body := StaticBody2D.new()
-	body.position = Vector2(x, ground_top_y - rise)
-	var count: int = maxi(1, ceili(rise / piece_h - 0.001))
-	var center_x_px: float = (geo[1] + geo[2]) * 0.5
-	for i in count:
-		var spr := Sprite2D.new()
-		spr.texture = tex
-		spr.centered = false
-		# 위쪽 투명 여백을 잘라 상판 윗면부터 시작 → 쌓아도 틈 없이 이어진다
-		spr.region_enabled = true
-		spr.region_rect = Rect2(0.0, plank_top, tex.get_width(), art_h_px)
-		spr.scale = Vector2(tex_scale, tex_scale)
-		spr.position = Vector2(-center_x_px * tex_scale, float(i) * piece_h)
-		body.add_child(spr)
-	# 충돌: 상판 윗면부터 땅 밑까지 꽉 찬 상자(원웨이 아님 — 밑에서 점프해도 못 지나감)
-	var coll_h: float = rise + PLATFORM_COLL_BURY
-	var col := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(platform_plank_width * 0.96, coll_h)
-	col.shape = shape
-	col.position = Vector2(0.0, coll_h * 0.5)   # 상자 윗면 = 원점(상판 윗면)
-	body.add_child(col)
-	add_child(body)
-	# 땅 그림보다 먼저 그려서 아래쪽을 땅이 덮게 한다 → 땅에 박힌 것처럼 이어지고, 솟고 가라앉을 때 땅속에서 나온다
-	move_child(body, $Ground.get_index())
-	return body
-
-## 발판을 땅 밑에서 최종 높이까지 솟아오르게 한다(올라오는 순간 먼지)
-func _raise_platform(body: StaticBody2D, delay: float) -> void:
-	var final_y: float = body.position.y
-	body.position.y = ground_top_y + PLATFORM_HIDE_DEPTH   # 땅 밑에 숨겨 시작(땅 그림이 덮는다)
-	var tw := create_tween()
-	if delay > 0.0:
-		tw.tween_interval(delay)
-	tw.tween_callback(_spawn_dust.bind(Vector2(body.position.x, ground_top_y), 1.8))
-	tw.tween_property(body, "position:y", final_y, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-## 파쿠르 진행 확인: 발판2에 올라선 뒤, 왼쪽으로 떨어져 땅에 닿으면 발판이 사라진다.
-## 꼭대기에 올라서면 목표 문구도 "왼쪽으로 내려오세요"로 바뀐다
-func _update_parkour(_delta: float) -> void:
-	if not _parkour_active:
-		return
-	if not _reached_p2:
-		if _bubble and not _bubble.is_typing():
-			_show_goal(_goal())
-		if _standing_on(_platform2):
-			_reached_p2 = true
-			_show_goal("좋다! 이제 왼쪽 땅으로 내려오세요")
-		return
-	# 발판2를 밟은 뒤 → 발판2 왼쪽 땅에 내려서면(발판 왼쪽 끝보다 더 왼쪽의 진짜 땅) 발판이 사라진다
-	if _fighter.is_on_floor() and not _standing_on(_platform1) and not _standing_on(_platform2):
-		if _fighter.global_position.x <= platform2_x - platform_plank_width * 0.5:
-			_finish_parkour()
-
-## 플레이어가 지금 이 바디 위에 서 있나(바닥 충돌 상대로 확인 — 발 위치를 추정하지 않는다)
-func _standing_on(body: Node) -> bool:
-	if body == null or not is_instance_valid(body):
-		return false
-	if not _fighter.is_on_floor():
-		return false
-	for i in _fighter.get_slide_collision_count():
-		var c := _fighter.get_slide_collision(i)
-		if c and c.get_collider() == body:
-			return true
-	return false
-
-## 발판이 흔들리다 땅속으로 가라앉아 사라지고, 잠시 뒤 다음 대사로 이어진다
-func _finish_parkour() -> void:
-	_parkour_active = false
-	_parkour_done = true
-	_show_goal("")
-	_sink_platform(_platform1)
-	_sink_platform(_platform2)
-	# 가라앉는 연출이 끝날 즈음 다음 대사("기본 공격은 F키다")로 넘어간다
-	Timers.after(self, 0.9, _go_next_line)
-
-func _sink_platform(body: StaticBody2D) -> void:
-	if body == null or not is_instance_valid(body):
-		return
-	# 가라앉는 동안엔 밟지 못하게 충돌을 끈다(플레이어는 땅으로 떨어진다)
-	for child in body.get_children():
-		if child is CollisionShape2D:
-			child.set_deferred("disabled", true)
-	var base_x: float = body.position.x
-	var tw := create_tween()
-	# 좌우로 흔들
-	for off in [8.0, -8.0, 6.0, -6.0, 3.0, -3.0, 0.0]:
-		tw.tween_property(body, "position:x", base_x + off, 0.05)
-	# 땅속으로 쑥 + 먼지
-	tw.tween_callback(_spawn_dust.bind(Vector2(base_x, ground_top_y), 1.6))
-	tw.tween_property(body, "position:y", ground_top_y + PLATFORM_HIDE_DEPTH, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tw.tween_callback(body.queue_free)
-
 ## 먼지 한 뭉치를 맵에 붙인다(순수 장식)
 func _spawn_dust(pos: Vector2, power: float) -> void:
 	var dust := LandDust.new()
@@ -508,7 +315,7 @@ func _spawn_instructor() -> void:
 	stats.max_hp = 100000
 	_instructor.stats = stats
 	add_child(_instructor)
-	_instructor.z_index = 2   # 나무 발판(z1)보다 앞에 그려지게
+	_instructor.z_index = 2   # 먼지(z 2)와 같은 층 — 배경 뒤로 숨지 않게
 	_instructor_home = $InstructorSpawn.global_position
 	_instructor.global_position = _instructor_home
 	_instructor.facing = -1.0          # 플레이어(왼쪽)를 본다
@@ -548,10 +355,6 @@ func _drive_instructor(delta: float) -> void:
 		_instructor.move(dir)
 		_instructor.apply_physics(delta)
 		return
-	# 패링 시범: 플레이어에게 다가가 기본공격
-	if _parry_active:
-		_drive_parry(delta)
-		return
 	# 평소: 제자리
 	_instructor.move(0.0)
 	_instructor.apply_physics(delta)
@@ -566,19 +369,17 @@ func _set_instructor_hittable(on: bool) -> void:
 		hurtbox.set_deferred("monitorable", on)
 	_instructor.is_invincible = not on   # 판정 말고 직접 피해를 주는 경로도 막는다
 
-## 교관이 원래 자리로 돌아왔다 → 때리기 시연 또는 패링 시범을 끝낸다.
+## 교관이 원래 자리로 돌아왔다 → 때리기 시연을 끝낸다.
 ## 스킬 실습 중에 주먹 3타로 날려 보냈으면 돌아온 뒤 다시 맞을 수 있게만 한다(실습은 계속)
 func _on_instructor_home() -> void:
 	if _hit_active:
 		_finish_hit_phase()
-	elif _parry_returning:
-		_finish_parry_phase()
 	elif _skill_phase != "":
 		_set_instructor_hittable(true)
 
 ## 교관이 맞았다 — 스킬 실습 중이고 방금 스킬을 쐈으면 그 스킬로 맞힌 것으로 친다
 func _on_instructor_damaged(_amount: int, _knockback: Vector2) -> void:
-	if (_skill_phase == "skill1" or _skill_phase == "skill2") and _skill_fired_for >= 0.0 and _skill_fired_for <= SKILL_HIT_WINDOW:
+	if _skill_phase != "" and _skill_fired_for >= 0.0 and _skill_fired_for <= SKILL_HIT_WINDOW:
 		_finish_skill_phase()
 
 # --- 교관 때리기 시연 ---
@@ -597,78 +398,15 @@ func _finish_hit_phase() -> void:
 	_set_instructor_hittable(false)
 	_go_next_line()
 
-# --- 패링 시범 ---
+# --- 스킬 실습 ---
 
-## "너의 패링을 보여줘라"를 넘긴 순간: 말풍선을 치우고 교관이 플레이어에게 다가와 2.5초마다 기본공격을 한다.
-## 플레이어가 방어로 막으면 성공 — 교관 등 뒤에 패링 X 아이콘이 뜨고, 잠시 뒤 원래 자리로 돌아가 다음 대사로 넘어간다.
-## 못 막으면 실제로 맞는다(데미지·넉백). 체력은 바닥나지 않게 채워 준다
-func _start_parry_phase() -> void:
-	if _parry_active or _parry_returning:
-		return
-	_parry_active = true
-	_parry_succeeded = false
-	_parry_timer = PARRY_FIRST_DELAY
-	_begin_phase()
-
-## 시범 중 교관: 플레이어 쪽을 보고, 너무 멀면 다가가고, 사거리 안이면 PARRY_ATTACK_INTERVAL초마다 기본공격을 낸다.
-## 공격이 방어에 막혀 잠기면(is_basic_attack_locked) 패링 성공
-func _drive_parry(delta: float) -> void:
-	var dx: float = _fighter.global_position.x - _instructor.global_position.x
-	if dx != 0.0:
-		_instructor.facing = signf(dx)
-	if _parry_succeeded:
-		# X 아이콘이 보이도록 잠시 서 있다가 돌아간다
-		_instructor.move(0.0)
-		_parry_wait -= delta
-		if _parry_wait <= 0.0:
-			_parry_active = false
-			_parry_returning = true
-			_instr_returning = true
-		_instructor.apply_physics(delta)
-		return
-	_instructor.move(signf(dx) if absf(dx) > PARRY_FOLLOW_GAP else 0.0)
-	_parry_timer -= delta
-	if _parry_timer <= 0.0 and absf(dx) <= PARRY_ATTACK_RANGE:
-		_instructor.use_basic_attack()
-		_parry_timer = PARRY_ATTACK_INTERVAL
-	if _instructor.is_basic_attack_locked():
-		_parry_succeeded = true
-		_parry_wait = PARRY_SUCCESS_WAIT
-		_show_goal("패링 성공! 교관 뒤의 빨간 X를 보세요")
-	_instructor.apply_physics(delta)
-
-## 시범 중 플레이어는 죽지 않게 — 체력이 바닥에 가까우면 가득 채운다
-func _keep_player_alive() -> void:
-	if _fighter == null or not is_instance_valid(_fighter):
-		return
-	var floor_hp: int = int(_fighter.stats.max_hp * PARRY_SAFE_HP_RATIO)
-	if _fighter.current_hp < floor_hp:
-		_fighter.current_hp = _fighter.stats.max_hp
-
-## 패링 시범 진행(매 프레임): 시범 중엔 플레이어 체력을 지킨다
-func _update_parry_phase(_delta: float) -> void:
-	if _parry_active:
-		_keep_player_alive()
-
-## 교관이 원래 자리로 돌아왔다 → 패링 시범을 끝내고 다음 대사("좋다 신병")로 넘어간다
-func _finish_parry_phase() -> void:
-	_parry_returning = false
-	_go_next_line()
-
-# --- 스킬 / 궁극기 실습 ---
-
-## 실습할 스킬 노드("skill1"/"skill2"/"ult")
+## 실습할 스킬 노드("skill1")
 func _phase_skill(phase: String) -> Skill:
-	match phase:
-		"skill1":
-			return _fighter.skill_1
-		"skill2":
-			return _fighter.skill_2
-		"ult":
-			return _fighter.skill_ultimate
+	if phase == "skill1":
+		return _fighter.skill_1
 	return null
 
-## 스킬 줄을 넘긴 순간: 말풍선을 치우고, 쿨을 비워 바로 쓸 수 있게 하고(궁은 시작부터 쿨이 돌고 있다), 교관을 맞을 수 있게 한다
+## 스킬 줄을 넘긴 순간: 말풍선을 치우고, 쿨을 비워 바로 쓸 수 있게 하고, 교관을 맞을 수 있게 한다
 func _start_skill_phase(phase: String) -> void:
 	if _skill_phase != "":
 		return
@@ -682,11 +420,10 @@ func _start_skill_phase(phase: String) -> void:
 	skill.cooldown_left = 0.0
 	_skill_was_ready = true
 	_begin_phase()
-	_set_instructor_hittable(phase != "ult")
+	_set_instructor_hittable(true)
 
 ## 실습 진행(매 프레임): 쿨이 "비어 있다 → 돈다"로 바뀌면 쐈다고 본다.
-## 스킬1·2는 헛쏘면 쿨을 짧게 깎아 금방 다시 쏘게 하고, 교관이 맞으면(`_on_instructor_damaged`) 끝.
-## 궁은 쓰기만 하면 잠시 뒤 끝(경봉을 뽑는 모션을 보여 준다)
+## 헛쏘면 쿨을 짧게 깎아 금방 다시 쏘게 하고, 교관이 맞으면(`_on_instructor_damaged`) 끝
 func _update_skill_phase(delta: float) -> void:
 	if _skill_phase == "":
 		return
@@ -700,10 +437,6 @@ func _update_skill_phase(delta: float) -> void:
 	_skill_was_ready = is_ready
 	if _skill_fired_for >= 0.0:
 		_skill_fired_for += delta
-	if _skill_phase == "ult":
-		if _skill_fired_for >= ULT_FINISH_WAIT:
-			_finish_skill_phase()
-		return
 	if not is_ready:
 		skill.cooldown_left = minf(skill.cooldown_left, SKILL_RETRY_COOLDOWN)
 	# 쏜 지 한참 지나도 안 맞았으면 "다시"를 알려 준다
@@ -921,7 +654,7 @@ func _spawn_player() -> void:
 	stats.move_speed = player_move_speed
 	_fighter.stats = stats
 	add_child(_fighter)
-	_fighter.z_index = 2   # 나무 발판(z1)보다 앞에 그려지게
+	_fighter.z_index = 2   # 먼지(z 2)와 같은 층 — 배경 뒤로 숨지 않게
 	# 입장 연출: 왼쪽 끝에서 투명하게 시작해 스폰 자리까지 걸어오며 나타난다. 컨트롤러는 도착 후에 붙인다
 	_intro_target_x = $PlayerSpawn.position.x
 	_fighter.global_position = Vector2(intro_start_x, $PlayerSpawn.global_position.y)
